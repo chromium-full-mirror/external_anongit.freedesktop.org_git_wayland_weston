@@ -36,7 +36,9 @@
 #include <pthread.h>
 
 #include <libweston/libweston.h>
+#include <libweston-desktop/libweston-desktop.h>
 #include <libweston/weston-log.h>
+#include <wayland-server-core.h>
 #include "backend.h"
 #include "libweston-internal.h"
 #include "compositor/weston.h"
@@ -203,7 +205,8 @@ move_surface(struct wl_client *client, struct wl_resource *resource,
 
 static void
 move_pointer(struct wl_client *client, struct wl_resource *resource,
-	     uint32_t tv_sec_hi, uint32_t tv_sec_lo, uint32_t tv_nsec,
+	     struct wl_resource *surface_resource, uint32_t tv_sec_hi,
+	     uint32_t tv_sec_lo, uint32_t tv_nsec,
 	     int32_t x, int32_t y)
 {
 	struct weston_test *test = wl_resource_get_user_data(resource);
@@ -211,6 +214,26 @@ move_pointer(struct wl_client *client, struct wl_resource *resource,
 	struct weston_pointer *pointer = weston_seat_get_pointer(seat);
 	struct weston_pointer_motion_event event = { 0 };
 	struct timespec time;
+
+	if (surface_resource) {
+		struct weston_surface *surface =
+			wl_resource_get_user_data(surface_resource);
+		struct weston_desktop_surface *desktop_surface = surface->committed_private;
+		if (!desktop_surface) {
+			desktop_surface = weston_surface_get_desktop_surface(surface);
+			if (!desktop_surface) {
+				wl_resource_post_no_memory(resource);
+				return;
+			}
+		}
+
+		struct weston_geometry geometry;
+		weston_desktop_surface_get_root_geometry(desktop_surface, &geometry);
+
+		// Translate the request from surface local to global coordinates.
+		x = x + geometry.x;
+		y = y + geometry.y;
+	}
 
 	event = (struct weston_pointer_motion_event) {
 		.mask = WESTON_POINTER_MOTION_REL,
@@ -238,6 +261,25 @@ send_button(struct wl_client *client, struct wl_resource *resource,
 	timespec_from_proto(&time, tv_sec_hi, tv_sec_lo, tv_nsec);
 
 	notify_button(seat, &time, button, state);
+
+	weston_test_send_pointer_button(resource, button, state);
+}
+
+static void
+reset_pointer(struct wl_client *client, struct wl_resource *resource) {
+	struct timespec time;
+
+	struct weston_test *test = wl_resource_get_user_data(resource);
+	struct weston_seat *seat = get_seat(test);
+	struct weston_pointer *pointer = weston_seat_get_pointer(seat);
+
+	if (!pointer->grab_button)
+		return;
+
+	while (pointer->button_count > 0) {
+		clock_gettime(CLOCK_MONOTONIC, &time);
+		notify_button(seat, &time, pointer->grab_button, WL_POINTER_BUTTON_STATE_RELEASED);
+	}
 }
 
 static void
@@ -294,6 +336,8 @@ send_key(struct wl_client *client, struct wl_resource *resource,
 	timespec_from_proto(&time, tv_sec_hi, tv_sec_lo, tv_nsec);
 
 	notify_key(seat, &time, key, state, STATE_UPDATE_AUTOMATIC);
+
+	weston_test_send_keyboard_key(resource, key, state);
 }
 
 static void
@@ -603,6 +647,7 @@ static const struct weston_test_interface test_implementation = {
 	move_surface,
 	move_pointer,
 	send_button,
+	reset_pointer,
 	send_axis,
 	activate_surface,
 	send_key,
