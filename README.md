@@ -1,8 +1,6 @@
 Weston
 ======
 
-blah
-
 ![screenshot of skeletal Weston desktop](doc/wayland-screenshot.jpg)
 
 Weston is the reference implementation of a Wayland compositor, as well as a
