@@ -1593,7 +1593,10 @@ has_keyboard_focused_child_callback(struct weston_desktop_surface *surface,
 	struct shell_surface *shsurf = get_shell_surface(es);
 	bool *has_keyboard_focus = user_data;
 
-	if (shsurf->focus_count > 0) {
+  if (!shsurf) {
+    *has_keyboard_focus = false;
+    return;
+  } else if (shsurf->focus_count > 0) {
 		*has_keyboard_focus = true;
 		return;
 	}
