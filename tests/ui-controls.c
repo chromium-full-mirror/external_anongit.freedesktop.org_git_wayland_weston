@@ -24,6 +24,8 @@ struct ui_controls_state {
   bool is_seat_initialized;
 };
 
+void reset_mouse_position(struct ui_controls_state* state);
+
 static int ui_controls_seat_init(struct ui_controls_state* state) {
   assert(!state->is_seat_initialized);
 
@@ -31,6 +33,9 @@ static int ui_controls_seat_init(struct ui_controls_state* state) {
   state->is_seat_initialized = true;
 
   weston_seat_init_pointer(&state->seat);
+  // Initialize pointer to (0, 0) to prevent BackButton or other components
+  // hover events from triggering flaky tests of Chromium.
+  reset_mouse_position(state);
   if (weston_seat_init_keyboard(&state->seat, NULL) < 0) {
     return -1;
   }
@@ -160,6 +165,17 @@ static void send_mouse_move(struct wl_client* client,
   zcr_ui_controls_v2_send_request_processed(resource, id);
 }
 
+void reset_mouse_position(
+    struct ui_controls_state* state
+) {
+  struct timespec time;
+  struct weston_pointer_motion_event event = {0};
+  event.mask = WESTON_POINTER_MOTION_ABS;
+  event.abs.c = weston_coord(0, 0);
+  weston_compositor_get_time(&event.time);
+  notify_motion(&state->seat, &time, &event);
+}
+
 static void send_mouse_button(struct wl_client* client,
                               struct wl_resource* resource,
                               uint32_t button,
@@ -240,6 +256,8 @@ static void reset_inputs(struct wl_resource* resource) {
     notify_touch(state->touch_device, &time, /*touch_id=*/0, NULL, WL_TOUCH_UP);
   }
   notify_touch_frame(state->touch_device);
+
+  reset_mouse_position(state);
 }
 
 static void bind_ui_controls(struct wl_client* client,
