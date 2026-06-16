@@ -1387,17 +1387,12 @@ gl_renderer_do_read_pixels_async(struct gl_renderer *gr,
 	create_capture_task_timer(task, gr, buffer->type, &shm_state, 5 * refresh_msec);
 }
 
-static bool
-blit_rb_to_dmabuf(struct gl_renderbuffer *rb, EGLImageKHR image,
+static void
+blit_rb_to_dmabuf(struct gl_renderbuffer *rb, GLuint fbo_dst,
 		  const struct weston_geometry *rect, bool invert_y)
 {
-	struct gl_renderer *gr = get_renderer(rb->output->compositor);
-	GLuint fbo_dst, rb_dst;
 	int32_t src_x0, src_y0, src_x1, src_y1;
 	int32_t dst_x0, dst_y0, dst_x1, dst_y1;
-
-	if (!gl_fbo_image_init(gr, image, &fbo_dst, &rb_dst))
-		return false;
 
 	src_x0 = rect->x;
 	src_y0 = rect->y;
@@ -1425,10 +1420,6 @@ blit_rb_to_dmabuf(struct gl_renderbuffer *rb, EGLImageKHR image,
 				  dst_x0, dst_y0, dst_x1, dst_y1,
 				  GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	}
-
-	gl_fbo_fini(&fbo_dst, &rb_dst);
-
-	return true;
 }
 
 static void
@@ -1476,8 +1467,8 @@ gl_renderer_do_capture_tasks(struct gl_renderer *gr,
 			struct linux_dmabuf_buffer *dmabuf = buffer->dmabuf;
 			const struct pixel_format_info *info;
 			EGLImageKHR image;
+			GLuint fbo_dst, rb_dst;
 			bool invert_y;
-			bool ok;
 
 			if (dmabuf->attributes.n_planes > 1) {
 				weston_capture_task_retire_failed(ct, "GL: multi-planar formats not supported");
@@ -1490,10 +1481,21 @@ gl_renderer_do_capture_tasks(struct gl_renderer *gr,
 				continue;
 			}
 
+			if (gr->gl_version < gl_version(3, 0)) {
+				weston_capture_task_retire_failed(ct, "GL: OpenGL ES < 3.0 does not support glBlitFramebuffer");
+				continue;
+			}
+
 			image = import_simple_dmabuf(gr, &dmabuf->attributes, NULL,
 						     WESTON_BUFFER_RESTRICTION_NO);
 			if (image == EGL_NO_IMAGE_KHR) {
 				weston_capture_task_retire_failed(ct, "GL: failed to import dma-buf buffer");
+				continue;
+			}
+
+			if (!gl_fbo_image_init(gr, image, &fbo_dst, &rb_dst)) {
+				gr->destroy_image(gr->egl_display, image);
+				weston_capture_task_retire_failed(ct, "GL: failed to initialize pair of framebuffer and renderbuffer");
 				continue;
 			}
 
@@ -1504,18 +1506,10 @@ gl_renderer_do_capture_tasks(struct gl_renderer *gr,
 			 */
 			invert_y = is_y_flipped(go) ^ (buffer->buffer_origin == ORIGIN_BOTTOM_LEFT);
 
-			if (gr->gl_version < gl_version(3, 0)) {
-				weston_capture_task_retire_failed(ct, "GL: OpenGL ES < 3.0 does not support glBlitFramebuffer");
-				continue;
-			}
+			blit_rb_to_dmabuf(rb, fbo_dst, &rect, invert_y);
 
-			ok =  blit_rb_to_dmabuf(rb, image, &rect, invert_y);
+			gl_fbo_fini(&fbo_dst, &rb_dst);
 			gr->destroy_image(gr->egl_display, image);
-
-			if (!ok) {
-				weston_capture_task_retire_failed(ct, "GL: failed to blit to dma-buf");
-				continue;
-			}
 
 			if (!create_capture_task_fence(ct, gr, buffer->type,
 						       NULL /* shm state */)) {
