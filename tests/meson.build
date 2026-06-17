@@ -57,7 +57,7 @@ tests = [
 	},
         {       'name': 'custom-env', },
 	{	'name': 'devices', },
-	{	'name': 'dmabuf-screenshot', },
+	{	'name': 'dmabuf-screenshot', 'run_exclusive': true },
 	{
 		'name': 'drm-formats',
 		'dep_objs': dep_libdrm_headers,
