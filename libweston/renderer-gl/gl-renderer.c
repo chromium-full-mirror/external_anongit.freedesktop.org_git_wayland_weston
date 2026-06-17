@@ -1389,10 +1389,16 @@ gl_renderer_do_read_pixels_async(struct gl_renderer *gr,
 
 static void
 blit_rb_to_dmabuf(struct gl_renderbuffer *rb, GLuint fbo_dst,
-		  const struct weston_geometry *rect, bool invert_y)
+		  const struct weston_geometry *rect,
+		  enum weston_buffer_origin buffer_origin)
 {
+	struct gl_output_state *go = get_output_state(rb->output);
 	int32_t src_x0, src_y0, src_x1, src_y1;
 	int32_t dst_x0, dst_y0, dst_x1, dst_y1;
+	bool invert_y;
+
+	invert_y = is_y_flipped(go) ^
+		   (buffer_origin == WESTON_BUFFER_ORIGIN_BOTTOM_LEFT);
 
 	src_x0 = rect->x;
 	src_y0 = rect->y;
@@ -1468,7 +1474,6 @@ gl_renderer_do_capture_tasks(struct gl_renderer *gr,
 			const struct pixel_format_info *info;
 			EGLImageKHR image;
 			GLuint fbo_dst, rb_dst;
-			bool invert_y;
 
 			if (dmabuf->attributes.n_planes > 1) {
 				weston_capture_task_retire_failed(ct, "GL: multi-planar formats not supported");
@@ -1499,15 +1504,7 @@ gl_renderer_do_capture_tasks(struct gl_renderer *gr,
 				continue;
 			}
 
-			/**
-			 * Flipped y means bottom-left origin; if destination
-			 * dma-buf has a different y origin we need to blit
-			 * considering that.
-			 */
-			invert_y = is_y_flipped(go) ^
-				   (buffer->buffer_origin == WESTON_BUFFER_ORIGIN_BOTTOM_LEFT);
-
-			blit_rb_to_dmabuf(rb, fbo_dst, &rect, invert_y);
+			blit_rb_to_dmabuf(rb, fbo_dst, &rect, buffer->buffer_origin);
 
 			gl_fbo_fini(&fbo_dst, &rb_dst);
 			gr->destroy_image(gr->egl_display, image);
