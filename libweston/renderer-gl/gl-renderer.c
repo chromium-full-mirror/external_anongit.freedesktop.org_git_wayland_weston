@@ -1388,43 +1388,92 @@ gl_renderer_do_read_pixels_async(struct gl_renderer *gr,
 }
 
 static void
-blit_rb_to_dmabuf(struct gl_renderbuffer *rb, GLuint fbo_dst,
-		  const struct weston_geometry *rect,
-		  enum weston_buffer_origin buffer_origin)
+draw_output_borders(struct weston_output *output,
+		    enum gl_border_status border_status);
+
+static int
+output_has_borders(struct weston_output *output);
+
+static void
+repaint_views(struct weston_output *output, pixman_region32_t *damage);
+
+static void
+capture_into_dmabuf(struct gl_renderbuffer *rb, GLuint fbo_dst,
+		    const struct weston_geometry *rect,
+		    enum weston_buffer_origin buffer_origin)
 {
-	struct gl_output_state *go = get_output_state(rb->output);
-	int32_t src_x0, src_y0, src_x1, src_y1;
-	int32_t dst_x0, dst_y0, dst_x1, dst_y1;
-	bool invert_y;
+	struct weston_output *output = rb->output;
+	struct gl_output_state *go = get_output_state(output);
+	struct gl_renderer *gr = get_renderer(output->compositor);
 
-	invert_y = is_y_flipped(go) ^
-		   (buffer_origin == WESTON_BUFFER_ORIGIN_BOTTOM_LEFT);
+	/* glBlitFramebuffer() is optimal, but only supported for GLES >= 3.0 */
+	if (gr->gl_version >= gl_version(3, 0)) {
+		int32_t src_x0, src_y0, src_x1, src_y1;
+		int32_t dst_x0, dst_y0, dst_x1, dst_y1;
+		bool invert_y;
 
-	src_x0 = rect->x;
-	src_y0 = rect->y;
-	src_x1 = rect->x + rect->width;
-	src_y1 = rect->y + rect->height;
+		invert_y = is_y_flipped(go) ^
+			   (buffer_origin == WESTON_BUFFER_ORIGIN_BOTTOM_LEFT);
 
-	dst_x0 = 0;
-	dst_y0 = 0;
-	dst_x1 = rect->width;
-	dst_y1 = rect->height;
+		src_x0 = rect->x;
+		src_y0 = rect->y;
+		src_x1 = rect->x + rect->width;
+		src_y1 = rect->y + rect->height;
 
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, rb->fb);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_dst);
+		dst_x0 = 0;
+		dst_y0 = 0;
+		dst_x1 = rect->width;
+		dst_y1 = rect->height;
 
-	if (invert_y) {
-		/**
-		 * Renderbuffer from which we are blitting and the destination
-		 * dma-buf have different buffer origin, so we need to flip y.
-		 */
-		glBlitFramebuffer(src_x0, src_y1, src_x1, src_y0,
-				  dst_x0, dst_y0, dst_x1, dst_y1,
-				  GL_COLOR_BUFFER_BIT, GL_NEAREST);
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, rb->fb);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo_dst);
+
+		if (invert_y) {
+			/**
+			 * Renderbuffer from which we are blitting and the
+			 * destination dma-buf have different buffer origin, so
+			 * we need to flip y.
+			 */
+			glBlitFramebuffer(src_x0, src_y1, src_x1, src_y0,
+					  dst_x0, dst_y0, dst_x1, dst_y1,
+					  GL_COLOR_BUFFER_BIT, GL_NEAREST);
+		} else {
+			glBlitFramebuffer(src_x0, src_y0, src_x1, src_y1,
+					  dst_x0, dst_y0, dst_x1, dst_y1,
+					  GL_COLOR_BUFFER_BIT, GL_NEAREST);
+		}
 	} else {
-		glBlitFramebuffer(src_x0, src_y0, src_x1, src_y1,
-				  dst_x0, dst_y0, dst_x1, dst_y1,
-				  GL_COLOR_BUFFER_BIT, GL_NEAREST);
+		struct weston_matrix saved_matrix = go->output_matrix;
+		float saved_y_flip = go->y_flip;
+
+		/*
+		 * Dirty hack: temporarily override go->y_flip and
+		 * go->output_matrix so that repaint_views() renders with the
+		 * correct y orientation for the dst dmabuf.
+		 */
+		go->y_flip = (buffer_origin == WESTON_BUFFER_ORIGIN_BOTTOM_LEFT) ?
+			     -1.0f : 1.0f;
+
+		go->output_matrix = output->matrix;
+		weston_matrix_translate(&go->output_matrix,
+					-rect->width / 2.0f,
+					-rect->height / 2.0f,
+					0.0f);
+		weston_matrix_scale(&go->output_matrix,
+				    2.0f / rect->width,
+				    go->y_flip * 2.0f / rect->height,
+				    1.0f);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, fbo_dst);
+		glViewport(0, 0, rect->width, rect->height);
+
+		repaint_views(output, &output->region);
+
+		go->output_matrix = saved_matrix;
+		go->y_flip = saved_y_flip;
+
+		if (output_has_borders(output))
+			draw_output_borders(output, BORDER_ALL_DIRTY);
 	}
 }
 
@@ -1486,11 +1535,6 @@ gl_renderer_do_capture_tasks(struct gl_renderer *gr,
 				continue;
 			}
 
-			if (gr->gl_version < gl_version(3, 0)) {
-				weston_capture_task_retire_failed(ct, "GL: OpenGL ES < 3.0 does not support glBlitFramebuffer");
-				continue;
-			}
-
 			image = import_simple_dmabuf(gr, &dmabuf->attributes, NULL,
 						     WESTON_BUFFER_RESTRICTION_NO);
 			if (image == EGL_NO_IMAGE_KHR) {
@@ -1504,7 +1548,7 @@ gl_renderer_do_capture_tasks(struct gl_renderer *gr,
 				continue;
 			}
 
-			blit_rb_to_dmabuf(rb, fbo_dst, &rect, buffer->buffer_origin);
+			capture_into_dmabuf(rb, fbo_dst, &rect, buffer->buffer_origin);
 
 			gl_fbo_fini(&fbo_dst, &rb_dst);
 			gr->destroy_image(gr->egl_display, image);
