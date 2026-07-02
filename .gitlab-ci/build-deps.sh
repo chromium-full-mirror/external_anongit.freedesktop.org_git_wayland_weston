@@ -59,7 +59,7 @@ fdo_log_section_end install_meson
 # just a regular container.
 fdo_log_section_start_collapsed install_kernel "install_kernel"
 if [[ -n "$KERNEL_DEFCONFIG" ]]; then
-	git clone --depth=1 --branch=v7.1 https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git linux
+	git clone --depth=1 --branch=v7.4-rc3 https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git linux
 	cd linux
 
 	if [[ "${BUILD_ARCH}" = "x86-64" ]]; then
