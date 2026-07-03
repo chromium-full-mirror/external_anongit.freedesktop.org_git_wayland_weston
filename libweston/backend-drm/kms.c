@@ -2482,7 +2482,8 @@ init_kms_caps(struct drm_device *device)
 	 * COLOR_ENCODING and COLOR_RANGE properties - Fixed Matrix - only
 	 * landed in Linux 7.4.
 	 */
-	if (b->compositor->color_manager) {
+	if (b->compositor->color_manager ||
+	    b->compositor->test_data.test_quirks.drm_force_plane_color_pipeline) {
 		ret = drmSetClientCap(device->kms_device->fd,
 				      DRM_CLIENT_CAP_PLANE_COLOR_PIPELINE, 1);
 		if (ret == 0)

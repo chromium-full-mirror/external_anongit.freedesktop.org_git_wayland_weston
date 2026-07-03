@@ -254,6 +254,8 @@ enum weston_output_restriction_policy {
  * \ingroup testharness
  */
 struct weston_testsuite_quirks {
+	/** Force-enable DRM_CLIENT_CAP_PLANE_COLOR_PIPELINE */
+	bool drm_force_plane_color_pipeline;
 	/** Force GL/Vulkan-renderer to do a full upload of wl_shm buffers. */
 	bool force_full_upload;
 	/** Ensure GL shadow fb is used, and always repaint it fully. */
