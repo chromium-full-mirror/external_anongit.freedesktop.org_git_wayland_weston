@@ -31,6 +31,8 @@ struct setup_args {
 	struct fixture_metadata meta;
 	enum weston_renderer_type renderer;
 	enum client_buffer_type buffer_type;
+	uint32_t required_capabilities;
+	bool drm_force_plane_color_pipeline;
 	bool gl_force_import_yuv_fallback;
 };
 

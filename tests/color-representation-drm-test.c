@@ -37,14 +37,28 @@
 
 static const struct setup_args my_setup_args[] = {
 	{
-		.meta.name = "GL - dmabuf renderer",
+		.meta.name = "GL - Legacy properties",
 		.renderer = WESTON_RENDERER_GL,
 		.buffer_type = CLIENT_BUFFER_TYPE_DMABUF,
 	},
 	{
-		.meta.name = "Vulkan - dmabuf renderer",
+		.meta.name = "GL - Plane color pipeline",
+		.renderer = WESTON_RENDERER_GL,
+		.buffer_type = CLIENT_BUFFER_TYPE_DMABUF,
+		.required_capabilities = WESTON_CAP_PLANE_COLOR_PIPELINE,
+		.drm_force_plane_color_pipeline = true,
+	},
+	{
+		.meta.name = "Vulkan - Legacy properties",
 		.renderer = WESTON_RENDERER_VULKAN,
 		.buffer_type = CLIENT_BUFFER_TYPE_DMABUF,
+	},
+	{
+		.meta.name = "Vulkan - Plane color pipeline",
+		.renderer = WESTON_RENDERER_VULKAN,
+		.buffer_type = CLIENT_BUFFER_TYPE_DMABUF,
+		.required_capabilities = WESTON_CAP_PLANE_COLOR_PIPELINE,
+		.drm_force_plane_color_pipeline = true,
 	},
 };
 
@@ -62,7 +76,10 @@ fixture_setup(struct weston_test_harness *harness, const struct setup_args *arg)
 	setup.width = 1024;
 	setup.height = 768;
 
-	setup.test_quirks.required_capabilities = WESTON_CAP_COLOR_REP;
+	setup.test_quirks.required_capabilities =
+		WESTON_CAP_COLOR_REP | arg->required_capabilities;
+	setup.test_quirks.drm_force_plane_color_pipeline =
+		arg->drm_force_plane_color_pipeline;
 	setup.test_quirks.gl_force_import_yuv_fallback =
 		arg->gl_force_import_yuv_fallback;
 
@@ -76,6 +93,9 @@ color_representation_drm(struct wet_testsuite_data *suite_data,
 {
 	const struct setup_args *args = &my_setup_args[get_test_fixture_index()];
 	enum cr_workaround workarounds = 0;
+
+	if (args->required_capabilities & WESTON_CAP_PLANE_COLOR_PIPELINE)
+		workarounds |= CR_WORKAROUND_RESET_COLOR_PIPELINE;
 
 	return test_color_representation(color_state, args->buffer_type,
 					 CLIENT_BUFFER_TYPE_DMABUF,

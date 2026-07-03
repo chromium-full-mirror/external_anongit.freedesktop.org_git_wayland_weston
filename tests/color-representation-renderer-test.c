@@ -75,7 +75,8 @@ fixture_setup(struct weston_test_harness *harness, const struct setup_args *arg)
 	setup.width = 1024;
 	setup.height = 768;
 
-	setup.test_quirks.required_capabilities = WESTON_CAP_COLOR_REP;
+	setup.test_quirks.required_capabilities =
+		WESTON_CAP_COLOR_REP | arg->required_capabilities;
 	setup.test_quirks.gl_force_import_yuv_fallback =
 		arg->gl_force_import_yuv_fallback;
 
