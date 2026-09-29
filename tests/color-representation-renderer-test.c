@@ -88,11 +88,12 @@ color_representation_renderer(struct wet_testsuite_data *suite_data,
 			      const struct color_state *color_state)
 {
 	const struct setup_args *args = &my_setup_args[get_test_fixture_index()];
+	enum cr_workaround workarounds = 0;
 
 	return test_color_representation(color_state, args->buffer_type,
 					 CLIENT_BUFFER_TYPE_SHM,
 					 WESTON_CAPTURE_V1_SOURCE_FRAMEBUFFER,
-					 FB_PRESENTED);
+					 FB_PRESENTED, workarounds);
 }
 
 static struct client_buffer*

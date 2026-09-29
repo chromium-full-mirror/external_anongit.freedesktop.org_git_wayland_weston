@@ -75,11 +75,13 @@ color_representation_drm(struct wet_testsuite_data *suite_data,
 			 const struct color_state *color_state)
 {
 	const struct setup_args *args = &my_setup_args[get_test_fixture_index()];
+	enum cr_workaround workarounds = 0;
 
 	return test_color_representation(color_state, args->buffer_type,
 					 CLIENT_BUFFER_TYPE_DMABUF,
 					 WESTON_CAPTURE_V1_SOURCE_WRITEBACK,
-					 FB_PRESENTED_ZERO_COPY);
+					 FB_PRESENTED_ZERO_COPY,
+					 workarounds);
 }
 
 DECLARE_TEST_LIST(

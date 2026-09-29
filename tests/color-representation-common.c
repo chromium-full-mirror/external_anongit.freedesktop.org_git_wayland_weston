@@ -90,6 +90,16 @@ presentation_wait_nofail(struct client *client, enum feedback_result *result)
 }
 
 static void
+buffer_release(void *data, struct wl_buffer *buffer)
+{
+	wl_buffer_destroy(buffer);
+}
+
+static const struct wl_buffer_listener buffer_listener = {
+	buffer_release
+};
+
+static void
 x8r8g8b8_to_ycbcr8(uint32_t xrgb,
 		   const struct color_state *color_state,
 		   uint8_t *y_out, uint8_t *cb_out, uint8_t *cr_out)
@@ -256,7 +266,8 @@ test_color_representation(const struct color_state *color_state,
 			  enum client_buffer_type client_buffer_type,
 			  enum client_buffer_type src_buffer_type,
 			  enum weston_capture_v1_source src_type,
-			  enum feedback_result expected_result)
+			  enum feedback_result expected_result,
+			  enum cr_workaround workarounds)
 {
 	struct xdg_client *xdg_client;
 	struct client *client;
@@ -334,6 +345,29 @@ test_color_representation(const struct color_state *color_state,
 	if (color_representation_surface)
 		wp_color_representation_surface_v1_destroy(color_representation_surface);
 	client_buffer_util_destroy_buffer(buffer);
+
+	// TODO: extra commit to force a identity color pipeline, remove once
+	// we have a proper solution such as DRM_MODE_ATOMIC_RESET.
+	if (workarounds & CR_WORKAROUND_RESET_COLOR_PIPELINE) {
+		struct wl_buffer *sp_buffer;
+
+		sp_buffer =
+			wp_single_pixel_buffer_manager_v1_create_u32_rgba_buffer(client->single_pixel_manager,
+										 0xffffffff, 0xffffffff,
+										 0xffffffff, 0xffffffff);
+		wl_surface_attach(surface, sp_buffer, 0, 0);
+		wl_buffer_add_listener(sp_buffer, &buffer_listener, NULL);
+		wl_surface_damage(surface, 0, 0, INT32_MAX, INT32_MAX);
+		presentation_feedback = wp_presentation_feedback(client->presentation,
+								 surface);
+		result = FB_PENDING;
+		wp_presentation_feedback_add_listener(presentation_feedback,
+						      &presentation_feedback_listener,
+						      &result);
+		wl_surface_commit(surface);
+		presentation_wait_nofail(client, &result);
+	}
+
 	destroy_xdg_surface(xdg_surface);
 	xdg_client_destroy(xdg_client);
 
