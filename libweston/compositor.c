@@ -359,8 +359,13 @@ paint_node_update_desired_protection(struct weston_paint_node *pnode)
 						  "Invalid restriction policy");
 		}
 	}
+	desired_protection = MAX(desired_protection, surface->desired_protection);
+	if (desired_protection == pnode->desired_protection &&
+	    protection_mode == pnode->protection_mode)
+		return;
 
-	pnode->desired_protection = MAX(desired_protection, surface->desired_protection);
+	pnode->status |= WESTON_PAINT_NODE_PROTECTION_DIRTY;
+	pnode->desired_protection = desired_protection;
 	pnode->protection_mode = protection_mode;
 }
 
@@ -382,6 +387,7 @@ paint_node_update_early(struct weston_paint_node *pnode)
 	bool output_dirty = pnode->status & WESTON_PAINT_NODE_OUTPUT_DIRTY;
 	bool buffer_dirty = pnode->status & WESTON_PAINT_NODE_BUFFER_DIRTY;
 	bool recording_censor, unprotected_censor;
+	bool old_censored;
 	bool was_solid = pnode->draw_solid;
 	struct weston_buffer *buffer;
 
@@ -408,6 +414,7 @@ paint_node_update_early(struct weston_paint_node *pnode)
 		pnode->alpha = pnode->view->alpha * pnode->surface->alpha_modifier;
 
 	pnode->draw_solid = false;
+	old_censored = pnode->censored;
 	pnode->censored = false;
 
 	buffer = pnode->surface->buffer_ref.buffer;
@@ -433,6 +440,8 @@ paint_node_update_early(struct weston_paint_node *pnode)
 		pnode->censored = true;
 		get_placeholder_color(pnode, &pnode->solid);
 	}
+	if (old_censored != pnode->censored)
+		pnode->status |= WESTON_PAINT_NODE_PROTECTION_DIRTY;
 
 	pnode->is_fully_transparent = is_pnode_fully_transparent(pnode);
 
@@ -526,6 +535,7 @@ paint_node_update_late(struct weston_paint_node *pnode)
 	struct weston_buffer *buffer = surf->buffer_ref.buffer;
 	bool vis_dirty = pnode->status & WESTON_PAINT_NODE_VISIBILITY_DIRTY;
 	bool plane_dirty = pnode->status & WESTON_PAINT_NODE_PLANE_DIRTY;
+	bool prot_dirty = pnode->status & WESTON_PAINT_NODE_PROTECTION_DIRTY;
 
 	/* The geoemtry may be shrinking, so we shouldn't just
 	 * add the old visible region to our damage region, because
@@ -546,7 +556,7 @@ paint_node_update_late(struct weston_paint_node *pnode)
 	 * If we changed planes, we need full visible region damage
 	 * on the new plane now that visibility is updated.
 	 */
-	if (pnode->plane && (vis_dirty || plane_dirty))
+	if (pnode->plane && (vis_dirty || plane_dirty || prot_dirty))
 		pixman_region32_copy(&pnode->damage, &pnode->visible);
 
 	if (plane_dirty) {
@@ -577,7 +587,8 @@ paint_node_update_late(struct weston_paint_node *pnode)
 	}
 
 	pnode->status &= ~(WESTON_PAINT_NODE_VISIBILITY_DIRTY |
-			   WESTON_PAINT_NODE_PLANE_DIRTY);
+			   WESTON_PAINT_NODE_PLANE_DIRTY |
+			   WESTON_PAINT_NODE_PROTECTION_DIRTY);
 
 	paint_node_validate_ready(pnode);
 }
@@ -4128,10 +4139,6 @@ weston_output_repaint(struct weston_output *output)
 			highest_requested = pnode->desired_protection;
 	}
 
-	/* If we're changing our protection characteristics, we need to go
-	 * through a full repaint. */
-	if (output->desired_protection != highest_requested)
-		output->full_repaint_needed = true;
 	output->desired_protection = highest_requested;
 
 	wl_list_for_each(pnode, &output->paint_node_z_order_list,
@@ -7085,7 +7092,7 @@ weston_output_compute_protection(struct weston_output *output)
 
 	if (output->current_protection != op_protection) {
 		output->current_protection = op_protection;
-		weston_output_damage(output);
+		weston_output_schedule_repaint(output);
 		weston_schedule_surface_protection_update(wc);
 	}
 }

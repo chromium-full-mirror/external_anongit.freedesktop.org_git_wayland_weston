@@ -366,7 +366,8 @@ enum weston_paint_node_status {
 	WESTON_PAINT_NODE_BUFFER_DIRTY = 1 << 4,
 	WESTON_PAINT_NODE_BUFFER_PARAMS_DIRTY = 1 << 5,
 	WESTON_PAINT_NODE_RATE_DIRTY = 1 << 6,
-	WESTON_PAINT_NODE_ALL_DIRTY = (1 << 7) - 1,
+	WESTON_PAINT_NODE_PROTECTION_DIRTY = 1 << 7,
+	WESTON_PAINT_NODE_ALL_DIRTY = (1 << 8) - 1,
 };
 
 
@@ -1983,6 +1984,8 @@ enum weston_surface_status {
 	/** protocol has changed the way the surface interacts
 	 *  with output timings */
 	WESTON_SURFACE_DIRTY_RATE = 1 << 7,
+	/** surface protection details have changed */
+	WESTON_SURFACE_DIRTY_PROTECTION = 1 << 8,
 };
 
 struct weston_surface_state {

@@ -390,6 +390,8 @@ paint_node_mask_to_str(enum weston_paint_node_status pnode_status)
 		return "visibility";
 	case WESTON_PAINT_NODE_PLANE_DIRTY:
 		return "plane";
+	case WESTON_PAINT_NODE_PROTECTION_DIRTY:
+		return "protection";
 	case WESTON_PAINT_NODE_ALL_DIRTY:
 		return "all";
 	default: /* we don't handle 0x0 bits in bits_to_stream + please

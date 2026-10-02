@@ -1158,6 +1158,11 @@ drm_output_propose_state_try_reuse(struct weston_output *output_base,
 		return NULL;
 	}
 
+	if (output_base->paint_node_changes & WESTON_PAINT_NODE_PROTECTION_DIRTY) {
+		debug_propose_fail(output, mode, "Protection requirements changed");
+		return NULL;
+	}
+
 	if (output_base->paint_node_changes & ~WESTON_PAINT_NODE_BUFFER_DIRTY) {
 		debug_propose_fail(output, mode, "state is outdated");
 		return NULL;

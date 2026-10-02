@@ -340,29 +340,27 @@ apply_damage_buffer(pixman_region32_t *dest,
 	pixman_region32_fini(&buffer_damage);
 }
 
-static void
+static enum weston_surface_status
 weston_surface_set_desired_protection(struct weston_surface *surface,
 				      enum weston_hdcp_protection protection)
 {
-	struct weston_paint_node *pnode;
-
 	if (surface->desired_protection == protection)
-		return;
+		return WESTON_SURFACE_CLEAN;
 
 	surface->desired_protection = protection;
 
-	wl_list_for_each(pnode, &surface->paint_node_list, surface_link) {
-		if (pixman_region32_not_empty(&pnode->visible))
-			weston_output_damage(pnode->output);
-	}
+	return WESTON_SURFACE_DIRTY_PROTECTION;
 }
 
-static void
+static enum weston_surface_status
 weston_surface_set_protection_mode(struct weston_surface *surface,
 				   enum weston_surface_protection_mode p_mode)
 {
 	struct content_protection *cp = surface->compositor->content_protection;
 	struct protected_surface *psurface;
+
+	if (surface->protection_mode == p_mode)
+		return WESTON_SURFACE_CLEAN;
 
 	surface->protection_mode = p_mode;
 	wl_list_for_each(psurface, &cp->protected_list, link) {
@@ -371,6 +369,8 @@ weston_surface_set_protection_mode(struct weston_surface *surface,
 		weston_protected_surface_send_event(psurface,
 						    surface->current_protection);
 	}
+
+	return WESTON_SURFACE_DIRTY_PROTECTION;
 }
 
 static bool
@@ -529,12 +529,11 @@ weston_surface_apply_state(struct weston_surface *surface,
 	wl_list_init(&state->feedback_list);
 
 	/* weston_protected_surface.enforced/relaxed */
-	if (surface->protection_mode != state->protection_mode)
-		weston_surface_set_protection_mode(surface,
-						   state->protection_mode);
+	status |= weston_surface_set_protection_mode(surface,
+						     state->protection_mode);
 
 	/* weston_protected_surface.set_type */
-	weston_surface_set_desired_protection(surface, state->desired_protection);
+	status |= weston_surface_set_desired_protection(surface, state->desired_protection);
 
 	/* color_management_surface_v1_interface.set_image_description or
 	 * color_management_surface_v1_interface.unset_image_description */
