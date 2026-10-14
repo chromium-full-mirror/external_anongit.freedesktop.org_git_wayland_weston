@@ -1454,7 +1454,7 @@ vulkan_renderer_do_capture_tasks(struct vulkan_renderer *vr,
 		assert(buffer->pixel_format->format == pixel_format->format);
 
 		if (buffer->type != WESTON_BUFFER_SHM ||
-		    buffer->buffer_origin != ORIGIN_TOP_LEFT) {
+		    buffer->buffer_origin != WESTON_BUFFER_ORIGIN_TOP_LEFT) {
 			weston_capture_task_retire_failed(ct, "Vulkan: unsupported buffer");
 			continue;
 		}
@@ -1605,7 +1605,7 @@ vulkan_pipeline_config_init_for_paint_node(struct vulkan_pipeline_config *pconf,
 
 	weston_matrix_multiply(&pconf->projection, &vo->output_matrix);
 
-	if (buffer->buffer_origin == ORIGIN_TOP_LEFT) {
+	if (buffer->buffer_origin == WESTON_BUFFER_ORIGIN_TOP_LEFT) {
 		weston_matrix_scale(&pconf->surface_to_buffer,
 				    1.0f / buffer->width,
 				    1.0f / buffer->height, 1);

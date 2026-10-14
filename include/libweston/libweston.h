@@ -1742,6 +1742,11 @@ enum weston_buffer_restriction {
 	WESTON_BUFFER_RESTRICTION_YES,
 };
 
+enum weston_buffer_origin {
+	WESTON_BUFFER_ORIGIN_TOP_LEFT = 0, /* buffer content starts at (0,0) */
+	WESTON_BUFFER_ORIGIN_BOTTOM_LEFT, /* buffer content starts at (0, height) */
+};
+
 struct weston_buffer {
 	struct wl_resource *resource;
 	struct wl_signal destroy_signal;
@@ -1759,10 +1764,7 @@ struct weston_buffer {
 	int32_t stride;
 	uint32_t busy_count;
 	uint32_t passive_count;
-	enum {
-		ORIGIN_TOP_LEFT, /* buffer content starts at (0,0) */
-		ORIGIN_BOTTOM_LEFT, /* buffer content starts at (0, height) */
-	} buffer_origin;
+	enum weston_buffer_origin buffer_origin;
 	bool direct_display;
 	enum weston_buffer_restriction restriction;
 

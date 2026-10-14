@@ -3402,7 +3402,7 @@ weston_buffer_from_resource(struct weston_compositor *ec,
 		buffer->width = wl_shm_buffer_get_width(shm);
 		buffer->height = wl_shm_buffer_get_height(shm);
 		buffer->stride = wl_shm_buffer_get_stride(shm);
-		buffer->buffer_origin = ORIGIN_TOP_LEFT;
+		buffer->buffer_origin = WESTON_BUFFER_ORIGIN_TOP_LEFT;
 		/* wl_shm might create a buffer with an unknown format, so check
 		 * and reject */
 		buffer->pixel_format =
@@ -3432,9 +3432,9 @@ weston_buffer_from_resource(struct weston_compositor *ec,
 		assert(buffer->pixel_format && !buffer->pixel_format->hide_from_clients);
 		buffer->format_modifier = dmabuf->attributes.modifier;
 		if (dmabuf->attributes.flags & ZWP_LINUX_BUFFER_PARAMS_V1_FLAGS_Y_INVERT)
-			buffer->buffer_origin = ORIGIN_BOTTOM_LEFT;
+			buffer->buffer_origin = WESTON_BUFFER_ORIGIN_BOTTOM_LEFT;
 		else
-			buffer->buffer_origin = ORIGIN_TOP_LEFT;
+			buffer->buffer_origin = WESTON_BUFFER_ORIGIN_TOP_LEFT;
 	} else if ((solid = single_pixel_buffer_get(buffer->resource))) {
 		buffer->type = WESTON_BUFFER_SOLID;
 		buffer->solid = *solid;
@@ -3656,7 +3656,7 @@ weston_buffer_create_solid_rgba(struct weston_compositor *compositor,
 	buffer->type = WESTON_BUFFER_SOLID;
 	buffer->width = 1;
 	buffer->height = 1;
-	buffer->buffer_origin = ORIGIN_TOP_LEFT;
+	buffer->buffer_origin = WESTON_BUFFER_ORIGIN_TOP_LEFT;
 	buffer->solid.r = r;
 	buffer->solid.g = g;
 	buffer->solid.b = b;
@@ -10316,7 +10316,7 @@ debug_scene_view_print_buffer(FILE *fp, struct weston_view *view)
 
 	fprintf(fp, "\t\t\twidth: %d, height: %d\n",
 		buffer->width, buffer->height);
-	if (buffer->buffer_origin == ORIGIN_BOTTOM_LEFT)
+	if (buffer->buffer_origin == WESTON_BUFFER_ORIGIN_BOTTOM_LEFT)
 		fputs("\t\t\tbottom-left origin\n", fp);
 
 	if (buffer->direct_display)

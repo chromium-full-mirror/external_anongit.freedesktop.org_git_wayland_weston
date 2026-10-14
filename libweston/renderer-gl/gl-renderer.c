@@ -1504,7 +1504,8 @@ gl_renderer_do_capture_tasks(struct gl_renderer *gr,
 			 * dma-buf has a different y origin we need to blit
 			 * considering that.
 			 */
-			invert_y = is_y_flipped(go) ^ (buffer->buffer_origin == ORIGIN_BOTTOM_LEFT);
+			invert_y = is_y_flipped(go) ^
+				   (buffer->buffer_origin == WESTON_BUFFER_ORIGIN_BOTTOM_LEFT);
 
 			blit_rb_to_dmabuf(rb, fbo_dst, &rect, invert_y);
 
@@ -1516,7 +1517,7 @@ gl_renderer_do_capture_tasks(struct gl_renderer *gr,
 				weston_capture_task_retire_failed(ct, "GL: create_capture_task_fence() failed");
 			}
 		} else if (buffer->type == WESTON_BUFFER_SHM) {
-			if (buffer->buffer_origin != ORIGIN_TOP_LEFT) {
+			if (buffer->buffer_origin != WESTON_BUFFER_ORIGIN_TOP_LEFT) {
 				weston_capture_task_retire_failed(ct, "GL: unsupported buffer");
 				continue;
 			}
@@ -1858,7 +1859,7 @@ prepare_textured_draw(struct gl_shader_config *sconf,
 
 	weston_matrix_multiply(&sconf->projection, &go->output_matrix);
 
-	if (buffer->buffer_origin == ORIGIN_TOP_LEFT) {
+	if (buffer->buffer_origin == WESTON_BUFFER_ORIGIN_TOP_LEFT) {
 		weston_matrix_scale(&sconf->surface_to_buffer,
 				    1.0f / buffer->width,
 				    1.0f / buffer->height, 1);
@@ -4445,7 +4446,7 @@ gl_renderer_surface_copy_content(struct weston_surface *surface,
 
 	glViewport(0, 0, cw, ch);
 	set_blend_state(gr, NULL, false);
-	if (buffer->buffer_origin == ORIGIN_TOP_LEFT)
+	if (buffer->buffer_origin == WESTON_BUFFER_ORIGIN_TOP_LEFT)
 		ARRAY_COPY(sconf.projection.M.colmaj, projmat_normal);
 	else
 		ARRAY_COPY(sconf.projection.M.colmaj, projmat_yinvert);
