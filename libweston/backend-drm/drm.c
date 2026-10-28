@@ -695,26 +695,38 @@ drm_connector_get_possible_crtcs_mask(struct drm_connector *connector)
 	return possible_crtcs;
 }
 
+/** Check if writeback is already in use by an output
+ *
+ * \param wb The writeback whose we'd like to check if in use
+ * \return True if in use, false if not
+ */
+bool
+drm_writeback_in_use(struct drm_writeback *wb)
+{
+	struct drm_device *device = wb->device;
+	struct drm_crtc *crtc;
+
+	/* An output may be using the writeback connector. */
+	wl_list_for_each(crtc, &device->crtc_list, link) {
+		if (crtc->output &&
+		    crtc->output->wb_state &&
+		    crtc->output->wb_state->wb == wb) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 static struct drm_writeback *
 drm_output_find_compatible_writeback(struct drm_output *output,
 				     const struct pixel_format_info *pixel_format)
 {
-	struct drm_crtc *crtc;
 	struct drm_writeback *wb;
-	bool in_use;
 	uint32_t possible_crtcs;
 
 	wl_list_for_each(wb, &output->device->writeback_connector_list, link) {
-		/* Another output may be using the writeback connector. */
-		in_use = false;
-		wl_list_for_each(crtc, &output->device->crtc_list, link) {
-			if (crtc->output && crtc->output->wb_state &&
-			    crtc->output->wb_state->wb == wb) {
-				in_use = true;
-				break;
-			}
-		}
-		if (in_use)
+		if (drm_writeback_in_use(wb))
 			continue;
 
 		/* Is the writeback connector compatible with the CRTC? */

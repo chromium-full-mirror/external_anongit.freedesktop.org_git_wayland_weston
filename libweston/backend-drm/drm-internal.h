@@ -759,6 +759,9 @@ drm_device_recovery_required(struct drm_device *device);
 void
 drm_device_recovery_complete(struct drm_device *device);
 
+bool
+drm_writeback_in_use(struct drm_writeback *wb);
+
 void
 drm_writeback_reference_planes(struct drm_writeback_state *state,
 			       struct wl_list *plane_state_list);
