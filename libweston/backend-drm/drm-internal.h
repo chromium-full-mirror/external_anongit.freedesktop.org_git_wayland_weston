@@ -616,6 +616,11 @@ struct drm_writeback {
 	/* drm_device::writeback_connector_list */
 	struct wl_list link;
 
+	/* Keeps track of the CRTC to which the writeback is currently routed
+	 * to. Can be NULL if not routed anywhere.
+	 */
+	struct drm_crtc *crtc;
+
 	struct drm_device *device;
 	struct drm_connector connector;
 

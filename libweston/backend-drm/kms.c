@@ -964,6 +964,7 @@ drm_output_assign_state(struct drm_output_state *state,
 	struct drm_device *device = output->device;
 	struct drm_backend *b = device->backend;
 	struct drm_plane_state *plane_state;
+	struct drm_writeback *wb;
 	struct drm_head *head;
 
 	assert(!output->state_last);
@@ -978,6 +979,21 @@ drm_output_assign_state(struct drm_output_state *state,
 	state->pending_state = NULL;
 
 	output->state_cur = state;
+
+	/* Update the wb->crtc to reflect the successful commit. For disabled
+	 * outputs, writeback connectors previously routed to this CRTC have
+	 * been detached from it. If the commit started a writeback, the
+	 * connector has been attached to the CRTC.
+	 */
+	if (state->dpms != WESTON_DPMS_ON) {
+		wl_list_for_each(wb, &device->writeback_connector_list, link) {
+			if (wb->crtc == output->crtc)
+				wb->crtc = NULL;
+		}
+	} else if (drm_output_get_writeback_state(output) ==
+		   DRM_OUTPUT_WB_SCREENSHOT_CHECK_FENCE) {
+		output->wb_state->wb->crtc = output->crtc;
+	}
 
 	if (mode == DRM_STATE_APPLY_ASYNC) {
 		drm_debug(b, "\t[CRTC:%u] setting pending flip\n",
@@ -1827,6 +1843,8 @@ drm_output_apply_state_atomic(struct drm_output_state *state,
 				wb_state->state = DRM_OUTPUT_WB_SCREENSHOT_CHECK_FENCE;
 		}
 	} else {
+		struct drm_writeback *wb;
+
 		ret |= crtc_add_prop_mode_id(req, crtc, NULL);
 		ret |= crtc_add_prop(req, crtc, WDRM_CRTC_ACTIVE, 0);
 
@@ -1840,6 +1858,15 @@ drm_output_apply_state_atomic(struct drm_output_state *state,
 		wl_list_for_each(head, &output->base.head_list, base.output_link)
 			ret |= connector_add_prop(req, &head->connector,
 						  WDRM_CONNECTOR_CRTC_ID, 0);
+
+		/* Detach writeback connectors that are not in use from this CRTC. */
+		wl_list_for_each(wb, &device->writeback_connector_list, link) {
+			if (wb->crtc != crtc || drm_writeback_in_use(wb))
+				continue;
+
+			ret |= connector_add_prop(req, &wb->connector,
+						  WDRM_CONNECTOR_CRTC_ID, 0);
+		}
 	}
 
 	wl_list_for_each_safe(head, tmp, &output->disable_head, disable_head_link) {
@@ -2012,6 +2039,7 @@ drm_pending_state_apply_atomic(struct drm_pending_state *pending_state,
 
 	if (device->recovery_status == DRM_RECOVERY_SCHEDULED) {
 		struct weston_head *head_base;
+		struct drm_writeback *wb;
 		struct drm_head *head;
 		struct drm_crtc *crtc;
 
@@ -2036,6 +2064,14 @@ drm_pending_state_apply_atomic(struct drm_pending_state *pending_state,
 			drm_debug(b, "\t\t[atomic] disabling inactive head %s\n",
 				  head_base->name);
 			ret |= connector_add_prop(req, &head->connector,
+						  WDRM_CONNECTOR_CRTC_ID, 0);
+		}
+
+		wl_list_for_each(wb, &device->writeback_connector_list, link) {
+			if (drm_writeback_in_use(wb))
+				continue;
+
+			ret |= connector_add_prop(req, &wb->connector,
 						  WDRM_CONNECTOR_CRTC_ID, 0);
 		}
 
@@ -2140,6 +2176,17 @@ drm_pending_state_apply_atomic(struct drm_pending_state *pending_state,
 		drm_output_assign_state(output_state, mode);
 
 	if (device->recovery_status == DRM_RECOVERY_SCHEDULED) {
+		struct drm_writeback *wb;
+
+		/* The commit detached every writeback that is not being used
+		 * from the CRTC it was previously routed to. Update wb->crtc
+		 * to reflect that.
+		 */
+		wl_list_for_each(wb, &device->writeback_connector_list, link) {
+			if (!drm_writeback_in_use(wb))
+				wb->crtc = NULL;
+		}
+
 		device->recovery_status = DRM_RECOVERY_APPLIED;
 		if (mode == DRM_STATE_APPLY_SYNC)
 			drm_device_recovery_complete(device);
