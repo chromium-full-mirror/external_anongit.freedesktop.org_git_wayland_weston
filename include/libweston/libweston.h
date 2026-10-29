@@ -1436,6 +1436,9 @@ enum weston_capability {
 
 	/* renderer supports in-shader blending */
 	WESTON_CAP_SHADER_BLENDING		= 0x0100,
+
+	/* backend supports plane color pipelines */
+	WESTON_CAP_PLANE_COLOR_PIPELINE		= 0x0200,
 };
 
 /* Configuration struct for a backend.

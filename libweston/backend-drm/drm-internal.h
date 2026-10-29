@@ -243,8 +243,6 @@ struct drm_device {
 
 	bool aspect_ratio_supported;
 
-	bool plane_color_pipeline_supported;
-
 	int32_t cursor_width;
 	int32_t cursor_height;
 

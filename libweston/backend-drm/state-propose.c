@@ -1483,8 +1483,9 @@ drm_output_propose_state(struct weston_output *output_base,
 		if (pnode->output->color_effect)
 			pnode->vopf_mask |= VOPF_OUTPUT_COLOR_EFFECT;
 
-		if (pnode->surf_xform.transform && (!device->plane_color_pipeline_supported ||
-						    !pnode->output->from_blend_to_output_by_backend))
+		if (pnode->surf_xform.transform &&
+		    (!(b->compositor->capabilities & WESTON_CAP_PLANE_COLOR_PIPELINE) ||
+		     !pnode->output->from_blend_to_output_by_backend))
 			pnode->vopf_mask |= VOPF_NO_COLOR_TRANSFORM;
 
 		/* Since we process views from top to bottom, we know that if

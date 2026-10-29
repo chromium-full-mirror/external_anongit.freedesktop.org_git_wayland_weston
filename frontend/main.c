@@ -896,6 +896,7 @@ static const struct {
 	{ WESTON_CAP_COLOR_OPS, "color operations" },
 	{ WESTON_CAP_COLOR_REP, "color representation" },
 	{ WESTON_CAP_SHADER_BLENDING, "in-shader blending" },
+	{ WESTON_CAP_PLANE_COLOR_PIPELINE, "plane color pipeline" },
 };
 
 static void
