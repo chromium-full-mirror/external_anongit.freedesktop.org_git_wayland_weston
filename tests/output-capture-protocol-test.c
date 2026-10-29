@@ -441,10 +441,16 @@ writeback_on_headless_fails(struct wet_testsuite_data *suite_data)
 			       WESTON_CAPTURE_V1_SOURCE_WRITEBACK);
 	client_roundtrip(client);
 
+	/* When source is unavailable, only 'formats_done' initial event is
+	 * sent.
+	 */
+	test_assert_true(capt->events.formats_done);
 	test_assert_false(capt->events.format);
-	test_assert_false(capt->events.formats_done);
 	test_assert_false(capt->events.size);
 	test_assert_enum_eq(capt->state, CAPTURE_TASK_PENDING);
+
+	/* Reset so we can ensure it's not re-sent below. */
+	capt->events.formats_done = false;
 
 	/* Trying pixel source that is not available should fail immediately */
 	weston_capture_source_v1_capture(capt->source, buf->proxy);

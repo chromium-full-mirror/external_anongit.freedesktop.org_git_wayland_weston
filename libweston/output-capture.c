@@ -757,8 +757,14 @@ weston_capture_v1_create(struct wl_client *client,
 
 		csrc->output = output;
 
-		if (source_info_is_available(csi))
+		if (source_info_is_available(csi)) {
 			capture_info_send_source_info(ci, csi);
+		} else {
+			/* Source is unavailable, protocol states that only
+			 * 'formats_done' should be sent.
+			 */
+			weston_capture_source_v1_send_formats_done(csrc->resource);
+		}
 	}
 	/*
 	 * if (!head) then weston_capture_source_v1_capture() will respond with
