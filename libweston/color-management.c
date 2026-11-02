@@ -1579,6 +1579,7 @@ cm_create_image_description_creator_params(struct wl_client *client,
 
 	cm_creator_params->builder =
 		weston_color_profile_param_builder_create(compositor);
+	weston_color_profile_param_builder_set_version(cm_creator_params->builder, version);
 
 	cm_creator_params->owner =
 		wl_resource_create(client, &wp_image_description_creator_params_v1_interface,

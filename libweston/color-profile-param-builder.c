@@ -55,6 +55,9 @@ struct weston_color_profile_param_builder {
 	 */
 	uint32_t group_mask;
 
+	/** For validation, default (0) means no protocol */
+	uint32_t protocol_version;
+
 	/*
 	 * Keeps track of errors.
 	 *
@@ -98,6 +101,27 @@ weston_color_profile_param_builder_create(struct weston_compositor *compositor)
 	weston_assert_ptr_not_null(compositor, builder->err_fp);
 
 	return builder;
+}
+
+/** Set protocol version for validation
+ *
+ * \param builder The builder.
+ * \param protocol_version The protocol interface version of
+ * \c wp_image_description_creator_params_v1 to use for validation.
+ *
+ * The version defaults to 0 which means that there is no protocol version
+ * associated: some checks default to strict, some to lax.
+ *
+ * The maximum accepted version is 3.
+ */
+void
+weston_color_profile_param_builder_set_version(struct weston_color_profile_param_builder *builder,
+					       uint32_t protocol_version)
+{
+	weston_assert_u32_ge(builder->compositor, protocol_version, 0);
+	weston_assert_u32_le(builder->compositor, protocol_version, 3);
+
+	builder->protocol_version = protocol_version;
 }
 
 /**
@@ -829,15 +853,20 @@ validate_maxfall(struct weston_color_profile_param_builder *builder)
 			    maxFALL, builder->params.target_max_luminance);
 }
 
+/** Stricter maxCLL and maxFALL validation for protocol version 1 */
 static void
-builder_validate_params(struct weston_color_profile_param_builder *builder)
+builder_validate_protocol_v1(struct weston_color_profile_param_builder *builder)
 {
 	if (builder->group_mask & WESTON_COLOR_PROFILE_PARAMS_MAXCLL)
 		validate_maxcll(builder);
 
 	if (builder->group_mask & WESTON_COLOR_PROFILE_PARAMS_MAXFALL)
 		validate_maxfall(builder);
+}
 
+static void
+builder_validate_params(struct weston_color_profile_param_builder *builder)
+{
 	if (builder->group_mask & WESTON_COLOR_PROFILE_PARAMS_MAXCLL &&
 	    builder->group_mask & WESTON_COLOR_PROFILE_PARAMS_MAXFALL &&
 	    builder->params.maxFALL > builder->params.maxCLL)
@@ -957,6 +986,9 @@ weston_color_profile_param_builder_create_params(struct weston_color_profile_par
 
 	/* Ensure that each param set is reasonable. */
 	builder_validate_params(builder);
+
+	if (builder->protocol_version < 2)
+		builder_validate_protocol_v1(builder);
 
 	/* Something went wrong, so error out. */
 	if (builder->has_errors) {

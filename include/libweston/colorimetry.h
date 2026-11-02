@@ -288,6 +288,10 @@ struct weston_color_profile_param_builder *
 weston_color_profile_param_builder_create(struct weston_compositor *compositor);
 
 void
+weston_color_profile_param_builder_set_version(struct weston_color_profile_param_builder *builder,
+					       uint32_t protocol_version);
+
+void
 weston_color_profile_param_builder_destroy(struct weston_color_profile_param_builder *builder);
 
 bool
