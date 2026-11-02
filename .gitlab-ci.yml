@@ -198,7 +198,7 @@ x86_64-debian-lts-container_prep:
     - .default-rules
     - .debian-lts-x86_64
     - .fdo.container-build@debian
-  timeout: 30m
+  timeout: 60m
   needs:
     - job: base-container-pre
   stage: "Base container"
@@ -210,7 +210,7 @@ x86_64-debian-container_prep:
     - .fdo.container-build@debian
   needs:
     - job: base-container-pre
-  timeout: 30m
+  timeout: 60m
   stage: "Base container"
 
 armv7-debian-lts-container_prep:
@@ -222,7 +222,7 @@ armv7-debian-lts-container_prep:
     - aarch64
   needs:
     - job: base-container-pre
-  timeout: 30m
+  timeout: 60m
   stage: "Base container"
 
 armv7-debian-container_prep:
@@ -234,7 +234,7 @@ armv7-debian-container_prep:
     - aarch64
   needs:
     - job: base-container-pre
-  timeout: 30m
+  timeout: 60m
   stage: "Base container"
 
 aarch64-debian-lts-container_prep:
@@ -246,7 +246,7 @@ aarch64-debian-lts-container_prep:
     - aarch64
   needs:
     - job: base-container-pre
-  timeout: 30m
+  timeout: 60m
   stage: "Base container"
 
 aarch64-debian-container_prep:
@@ -258,7 +258,7 @@ aarch64-debian-container_prep:
     - aarch64
   needs:
     - job: base-container-pre
-  timeout: 30m
+  timeout: 60m
   stage: "Base container"
 
 # Core templates for all of our build steps. These are reused by all build jobs
