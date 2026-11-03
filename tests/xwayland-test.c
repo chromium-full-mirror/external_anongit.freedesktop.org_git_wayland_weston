@@ -183,6 +183,69 @@ xwayland_client_test(struct wet_testsuite_data *suite_data)
 	return RESULT_OK;
 }
 
+static enum test_result_code
+xwayland_id_reuse_test(struct wet_testsuite_data *suite_data)
+{
+	struct window_x11 *window;
+	struct connection_x11 *conn;
+	pixman_color_t bg_color;
+	xcb_connection_t *xcb_conn;
+	xcb_generic_event_t *event;
+	xcb_void_cookie_t cookie;
+	uint32_t event_mask = XCB_EVENT_MASK_STRUCTURE_NOTIFY;
+	bool frame_destroyed;
+
+	color_rgb888(&bg_color, 255, 0, 0);
+	conn = create_x11_connection();
+	test_assert_ptr_not_null(conn);
+	window = create_x11_window(100, 100, 100, 100, conn, bg_color, NULL);
+	test_assert_ptr_not_null(window);
+
+	window_x11_map(window);
+	handle_events_and_check_flags(window, MAPPED);
+
+	window_x11_unmap(window);
+	handle_events_and_check_flags(window, UNMAPPED);
+
+	/* Destroy the window and create a new one with the same window-id */
+	xcb_conn = window_get_connection(window);
+	xcb_change_window_attributes(xcb_conn, window->frame_id,
+				     XCB_CW_EVENT_MASK, &event_mask);
+	xcb_grab_server(xcb_conn);
+	xcb_destroy_window(xcb_conn, window->win_id);
+	cookie = xcb_create_window_checked(xcb_conn, XCB_COPY_FROM_PARENT,
+					   window->win_id, window->root_win_id,
+					   100, 100, 100, 100, 0,
+					   XCB_WINDOW_CLASS_INPUT_OUTPUT,
+					   window->screen->root_visual,
+					   XCB_CW_EVENT_MASK, &event_mask);
+	test_assert_ptr_null(xcb_request_check(xcb_conn, cookie));
+	xcb_ungrab_server(xcb_conn);
+	xcb_flush(xcb_conn);
+
+	/* Verify that we don't get any reparent events until the destroy
+	 * event arrives.
+	 */
+	do {
+		event = xcb_wait_for_event(xcb_conn);
+		test_assert_ptr_not_null(event);
+		if (!test_assert_u8_ne(EVENT_TYPE(event), XCB_REPARENT_NOTIFY)) {
+			free(event);
+			break;
+		}
+		frame_destroyed = EVENT_TYPE(event) == XCB_DESTROY_NOTIFY &&
+			((xcb_destroy_notify_event_t *)event)->window ==
+			window->frame_id;
+		free(event);
+	} while (!frame_destroyed);
+
+	destroy_x11_window(window);
+	destroy_x11_connection(conn);
+
+	return RESULT_OK;
+}
+
 DECLARE_TEST_LIST(
 	TESTFN(xwayland_client_test),
+	TESTFN(xwayland_id_reuse_test),
 );

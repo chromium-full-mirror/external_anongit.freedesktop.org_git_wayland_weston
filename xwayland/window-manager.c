@@ -1688,10 +1688,7 @@ weston_wm_window_destroy(struct weston_wm_window *window)
 		cairo_surface_destroy(window->cairo_surface);
 
 	if (window->frame_id) {
-		xcb_reparent_window(wm->conn, window->id, wm->wm_window, 0, 0);
 		xcb_destroy_window(wm->conn, window->frame_id);
-		weston_wm_window_set_wm_state(window, ICCCM_WITHDRAWN_STATE);
-		weston_wm_window_set_virtual_desktop(window, -1);
 		hash_table_remove(wm->window_hash, window->frame_id);
 		window->frame_id = XCB_WINDOW_NONE;
 	}
