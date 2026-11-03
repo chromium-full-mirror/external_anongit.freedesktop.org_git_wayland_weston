@@ -526,8 +526,14 @@ link_image_description_resource(struct weston_color_manager *cm,
 
 	wl_resource_set_user_data(owner, cm_image_desc);
 
-	wp_image_description_v1_send_ready(cm_image_desc->owner,
-					   cm_image_desc->cprof->id);
+	if (version >= WP_IMAGE_DESCRIPTION_V1_READY2_SINCE_VERSION) {
+		wp_image_description_v1_send_ready2(cm_image_desc->owner,
+						    cm_image_desc->cprof->id64 >> 32,
+						    cm_image_desc->cprof->id64 & 0xffffffff);
+	} else {
+		wp_image_description_v1_send_ready(cm_image_desc->owner,
+						   cm_image_desc->cprof->id);
+	}
 }
 
 /**
@@ -969,9 +975,16 @@ weston_surface_send_preferred_image_description_changed(struct weston_surface *s
 {
 	struct wl_resource *res;
 	uint32_t id = surface->preferred_color_profile->id;
+	uint64_t id64 = surface->preferred_color_profile->id64;
 
-	wl_resource_for_each(res, &surface->cm_surface_feedback_resource_list)
-		wp_color_management_surface_feedback_v1_send_preferred_changed(res, id);
+	wl_resource_for_each(res, &surface->cm_surface_feedback_resource_list) {
+		if (wl_resource_get_version(res) >= WP_COLOR_MANAGEMENT_SURFACE_FEEDBACK_V1_PREFERRED_CHANGED2_SINCE_VERSION) {
+			wp_color_management_surface_feedback_v1_send_preferred_changed2(res, id64 >> 32,
+											id64 & 0xffffffff);
+		} else {
+			wp_color_management_surface_feedback_v1_send_preferred_changed(res, id);
+		}
+	}
 }
 
 /**

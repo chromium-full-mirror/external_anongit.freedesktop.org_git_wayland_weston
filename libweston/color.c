@@ -143,6 +143,7 @@ weston_color_profile_init(struct weston_color_profile *cprof,
 	cprof->cm = cm;
 	cprof->ref_count = 1;
 	cprof->id = weston_idalloc_get_id(cm->compositor->color_profile_id_generator);
+	cprof->id64 = cm->compositor->color_profile_id64_generator++;
 }
 
 /**

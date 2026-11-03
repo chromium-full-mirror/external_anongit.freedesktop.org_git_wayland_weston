@@ -1598,6 +1598,7 @@ struct weston_compositor {
 
 	struct weston_color_manager *color_manager;
 	struct weston_idalloc *color_profile_id_generator;
+	uint64_t color_profile_id64_generator;
 	struct weston_idalloc *color_transform_id_generator;
 
 	struct weston_renderer *renderer;

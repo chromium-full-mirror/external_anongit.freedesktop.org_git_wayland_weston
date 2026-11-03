@@ -586,6 +586,7 @@ parametric_color_profile_parsing(struct wet_testsuite_data *suite_data,
 	struct weston_compositor mock_compositor = {
 		.color_manager = &mock_cm.base,
 		.color_profile_id_generator = weston_idalloc_create(&mock_compositor),
+		.color_profile_id64_generator = 1,
 	};
 	struct weston_output mock_output = {};
 	struct weston_head mock_head = {};

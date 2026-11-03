@@ -126,6 +126,10 @@ struct weston_color_profile {
 	/* Unique id to be used by the CM&HDR protocol extension. Should not
 	 * be confused with the protocol object id. */
 	uint32_t id;
+
+	/* Unique 64-bit id to be used by the CM&HDR protocol extension. Should not
+	 * be confused with the protocol object id. */
+	uint64_t id64;
 };
 
 /** Type for parametric curves */

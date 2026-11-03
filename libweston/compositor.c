@@ -10844,6 +10844,7 @@ weston_compositor_create(struct wl_display *display,
 	weston_compositor_install_capture_protocol(ec);
 
 	ec->color_profile_id_generator = weston_idalloc_create(ec);
+	ec->color_profile_id64_generator = 1;
 	ec->color_transform_id_generator = weston_idalloc_create(ec);
 
 	wl_list_init(&ec->view_list);
