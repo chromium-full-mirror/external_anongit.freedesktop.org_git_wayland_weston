@@ -681,6 +681,25 @@ cmlcms_get_color_profile_from_params(struct weston_color_manager *cm_base,
 	return true;
 }
 
+bool
+cmlcms_supports_image_desc_info(uint32_t interface_version,
+				struct weston_color_profile *cprof_base,
+				char **err_msg)
+{
+	struct cmlcms_color_profile *cprof = to_cmlcms_cprof(cprof_base);
+
+	switch (cprof->type) {
+	case CMLCMS_PROFILE_TYPE_ICC:
+		return true;
+	case CMLCMS_PROFILE_TYPE_PARAMS:
+		return weston_color_profile_params_is_supported(interface_version,
+								cprof->params,
+								err_msg);
+	}
+
+	return false;
+}
+
 static bool
 cmlcms_send_icc_info(struct cm_image_desc_info *cm_image_desc_info,
 		     const struct cmlcms_color_profile *cprof)

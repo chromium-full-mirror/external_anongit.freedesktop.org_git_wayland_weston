@@ -187,6 +187,11 @@ cmlcms_get_color_profile_from_params(struct weston_color_manager *cm_base,
 				     char **errmsg);
 
 bool
+cmlcms_supports_image_desc_info(uint32_t interface_version,
+				struct weston_color_profile *cprof_base,
+				char **err_msg);
+
+bool
 cmlcms_send_image_desc_info(struct cm_image_desc_info *cm_image_desc_info,
 			    struct weston_color_profile *cprof_base);
 

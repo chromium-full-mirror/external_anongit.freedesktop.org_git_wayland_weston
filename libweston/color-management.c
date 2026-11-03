@@ -95,6 +95,24 @@ struct cm_creator_params {
 };
 
 /**
+ * Check if the given protocol interface version is sufficient for sending
+ * the parametric image description to a client.
+ */
+WL_EXPORT bool
+weston_color_profile_params_is_supported(uint32_t interface_version,
+					 const struct weston_color_profile_params *par,
+					 char **err_msg)
+{
+	if (interface_version < par->tf.info->protocol_since) {
+		str_printf(err_msg, "interface version %u is too low for the TF %s",
+			   interface_version, par->tf.info->desc);
+		return false;
+	}
+
+	return true;
+}
+
+/**
  * For an ICC-based image description, sends the ICC information to the
  * client.
  *
@@ -467,7 +485,9 @@ create_image_description_resource(struct wl_client *client,
 }
 
 /**
- * Ties the color profile with the resource, and sends 'ready'.
+ * If \c supports_get_info is false or if the color profile is compatible with
+ * the wp_image_description_v1 interface version, ties the color profile with
+ * the resource and sends 'ready'. Otherwise sends 'failed'.
  */
 static void
 link_image_description_resource(struct weston_color_manager *cm,
@@ -475,6 +495,7 @@ link_image_description_resource(struct weston_color_manager *cm,
 				enum supports_get_info supports_get_info,
 				struct wl_resource *owner)
 {
+	uint32_t version = wl_resource_get_version(owner);
 	struct cm_image_desc *cm_image_desc;
 
 	weston_assert_true(cm->compositor,
@@ -482,6 +503,21 @@ link_image_description_resource(struct weston_color_manager *cm,
 			   			   &image_description_implementation));
 	weston_assert_ptr_null(cm->compositor, wl_resource_get_user_data(owner));
 	weston_assert_ptr_not_null(cm->compositor, cprof);
+
+	if (supports_get_info == YES_GET_INFO) {
+		char *err_msg = NULL;
+		bool ok;
+
+		ok = cm->supports_image_desc_info(version, cprof, &err_msg);
+		if (!ok) {
+			wp_image_description_v1_send_failed(owner,
+							    WP_IMAGE_DESCRIPTION_V1_CAUSE_LOW_VERSION,
+							    err_msg ?: "");
+			free(err_msg);
+
+			return;
+		}
+	}
 
 	cm_image_desc = xzalloc(sizeof(*cm_image_desc));
 	cm_image_desc->owner = owner;

@@ -39,6 +39,11 @@ weston_output_send_image_description_changed(struct weston_output *output);
 void
 weston_surface_send_preferred_image_description_changed(struct weston_surface *surface);
 
+bool
+weston_color_profile_params_is_supported(uint32_t interface_version,
+					 const struct weston_color_profile_params *par,
+					 char **err_msg);
+
 void
 weston_cm_send_icc_file(struct cm_image_desc_info *cm_image_desc_info,
                         int32_t fd, uint32_t len);

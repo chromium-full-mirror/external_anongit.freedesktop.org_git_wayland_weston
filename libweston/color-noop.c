@@ -268,6 +268,7 @@ weston_color_manager_noop_create(struct weston_compositor *compositor)
 	cm->base.ref_stock_sRGB_color_profile = cmnoop_ref_stock_sRGB_color_profile;
 	cm->base.get_color_profile_from_icc = cmnoop_get_color_profile_from_icc;
 	cm->base.get_color_profile_from_params = cmnoop_get_color_profile_from_params;
+	cm->base.supports_image_desc_info = NULL;
 	cm->base.send_image_desc_info = NULL;
 	cm->base.destroy_color_transform = cmnoop_destroy_color_transform;
 	cm->base.get_surface_color_transform = cmnoop_get_surface_color_transform;

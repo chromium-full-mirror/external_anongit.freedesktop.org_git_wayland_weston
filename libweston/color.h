@@ -542,6 +542,27 @@ struct weston_color_manager {
 					 struct weston_color_profile **cprof_out,
 					 char **errmsg);
 
+	/** Check if the protocol supports sending the image description
+	 *
+	 * \param interface_version The protocol interface version of
+	 * \c wp_image_description_info_v1 .
+	 * \param cprof_base The color profile that backs the image description
+	 * \param[out] err_msg Human-readable error message on unsupported,
+	 * untouched otherwise. Must be \c free() 'd by the caller.
+	 * \return True for supported, false for unsupported.
+	 *
+	 * This should be used only by the CM&HDR protocol extension
+	 * implementation.
+	 *
+	 * The color manager implementing this function should forward the call
+	 * to weston_color_profile_params_is_supported() for parametric color
+	 * profiles.
+	 */
+	bool
+	(*supports_image_desc_info)(uint32_t interface_version,
+				    struct weston_color_profile *cprof_base,
+				    char **err_msg);
+
 	/** Send image description to clients.
 	 *
 	 * \param cm_image_desc_info The image description info object
