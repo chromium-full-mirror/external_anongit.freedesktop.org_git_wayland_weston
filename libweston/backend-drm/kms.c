@@ -261,6 +261,7 @@ static struct drm_property_enum_info colorop_type_enums[] = {
 	[WDRM_COLOROP_TYPE_CTM_3X4] = { .name = "3x4 Matrix", },
 	[WDRM_COLOROP_TYPE_MULTIPLIER] = { .name = "Multiplier", },
 	[WDRM_COLOROP_TYPE_3D_LUT] = { .name = "3D LUT", },
+	[WDRM_COLOROP_TYPE_FIXED_MATRIX] = { .name = "Fixed Matrix", },
 };
 
 static struct drm_property_enum_info colorop_curve_1d_enums[] = {
@@ -280,6 +281,15 @@ static struct drm_property_enum_info colorop_lut1d_interpolation_enums[] = {
 
 static struct drm_property_enum_info colorop_lut3d_interpolation_enums[] = {
 	[WDRM_COLOROP_LUT3D_INTERPOLATION_TETRAHEDRAL] = { .name = "Tetrahedral", },
+};
+
+static struct drm_property_enum_info colorop_fixed_matrix_enums[] = {
+	[WDRM_COLOROP_FIXED_MATRIX_YCBCR_601_FULL_RGB] = { .name = "YCbCr 601 Full to RGB", },
+	[WDRM_COLOROP_FIXED_MATRIX_YCBCR_601_LIMITED_RGB] = { .name = "YCbCr 601 Limited to RGB", },
+	[WDRM_COLOROP_FIXED_MATRIX_YCBCR_709_FULL_RGB] = { .name = "YCbCr 709 Full to RGB", },
+	[WDRM_COLOROP_FIXED_MATRIX_YCBCR_709_LIMITED_RGB] = { .name = "YCbCr 709 Limited to RGB", },
+	[WDRM_COLOROP_FIXED_MATRIX_YCBCR_BT2020_FULL_RGB_NC] = { .name = "YCbCr 2020 NC Full to RGB", },
+	[WDRM_COLOROP_FIXED_MATRIX_YCBCR_BT2020_LIMITED_RGB_NC] = { .name = "YCbCr 2020 NC Limited to RGB", },
 };
 
 const struct drm_property_info colorop_props[] = {
@@ -310,6 +320,11 @@ const struct drm_property_info colorop_props[] = {
 		.name = "LUT3D_INTERPOLATION",
 		.enum_values = colorop_lut3d_interpolation_enums,
 		.num_enum_values = WDRM_COLOROP_LUT3D_INTERPOLATION__COUNT,
+	},
+	[WDRM_COLOROP_FIXED_MATRIX] = {
+		.name = "FIXED_MATRIX_TYPE",
+		.enum_values = colorop_fixed_matrix_enums,
+		.num_enum_values = WDRM_COLOROP_FIXED_MATRIX__COUNT,
 	},
 };
 
@@ -1676,6 +1691,11 @@ drm_colorop_program(drmModeAtomicReq *req, struct drm_colorop_state *colorop_sta
  	case COLOROP_OBJECT_TYPE_MULTIPLIER:
 		ret = colorop_add_prop(req, colorop,
 				       WDRM_COLOROP_MULTIPLIER, value->multiplier);
+		break;
+	case COLOROP_OBJECT_TYPE_FIXED_MATRIX:
+		ret = colorop_add_prop_enum(req, colorop,
+					    WDRM_COLOROP_FIXED_MATRIX,
+					    value->fixed_matrix);
 		break;
 	}
 

@@ -80,6 +80,7 @@ enum colorop_object_type {
 	COLOROP_OBJECT_TYPE_3x1D_LUT,
 	COLOROP_OBJECT_TYPE_3D_LUT,
 	COLOROP_OBJECT_TYPE_MULTIPLIER,
+	COLOROP_OBJECT_TYPE_FIXED_MATRIX,
 };
 
 struct drm_colorop_state_object {
@@ -91,6 +92,7 @@ struct drm_colorop_state_object {
 	uint32_t lut_3x1d_blob_id;
 	uint32_t lut_3d_blob_id;
 	uint64_t multiplier;
+	enum wdrm_colorop_fixed_matrix fixed_matrix;
 };
 
 struct drm_colorop_state {

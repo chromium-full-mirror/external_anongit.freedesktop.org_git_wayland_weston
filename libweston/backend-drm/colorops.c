@@ -887,6 +887,57 @@ multiplier_create_colorop_state(struct drm_color_pipeline_state *pipeline_state,
 	return drm_colorop_state_create(pipeline_state, colorop, so);
 }
 
+struct weston_fixed_matrix_info {
+	enum weston_color_matrix_coef coefficients;
+	enum weston_color_quant_range range;
+	enum wdrm_colorop_fixed_matrix wdrm;
+};
+
+static const struct weston_fixed_matrix_info fixed_matrix_info_map[] = {
+	{ WESTON_COLOR_MATRIX_COEF_BT601, WESTON_COLOR_QUANT_RANGE_FULL, WDRM_COLOROP_FIXED_MATRIX_YCBCR_601_FULL_RGB },
+	{ WESTON_COLOR_MATRIX_COEF_BT709, WESTON_COLOR_QUANT_RANGE_FULL, WDRM_COLOROP_FIXED_MATRIX_YCBCR_709_FULL_RGB },
+	{ WESTON_COLOR_MATRIX_COEF_BT2020, WESTON_COLOR_QUANT_RANGE_FULL, WDRM_COLOROP_FIXED_MATRIX_YCBCR_BT2020_FULL_RGB_NC },
+	{ WESTON_COLOR_MATRIX_COEF_BT601, WESTON_COLOR_QUANT_RANGE_LIMITED, WDRM_COLOROP_FIXED_MATRIX_YCBCR_601_LIMITED_RGB },
+	{ WESTON_COLOR_MATRIX_COEF_BT709, WESTON_COLOR_QUANT_RANGE_LIMITED, WDRM_COLOROP_FIXED_MATRIX_YCBCR_709_LIMITED_RGB },
+	{ WESTON_COLOR_MATRIX_COEF_BT2020, WESTON_COLOR_QUANT_RANGE_LIMITED, WDRM_COLOROP_FIXED_MATRIX_YCBCR_BT2020_LIMITED_RGB_NC },
+};
+
+static struct drm_colorop_state *
+fixed_matrix_create_colorop_state(struct drm_color_pipeline_state *pipeline_state,
+				  const struct drm_colorop *previous_colorop,
+				  struct weston_color_representation *color_rep)
+{
+	const struct drm_color_pipeline *pipeline = pipeline_state->pipeline;
+	struct weston_compositor *compositor = pipeline->plane->base.compositor;
+	struct drm_colorop_state_object so = { 0 };
+	struct drm_property_enum_info *prop_info;
+	const struct drm_colorop *colorop;
+
+	colorop = search_colorop_type(pipeline, previous_colorop,
+				      WDRM_COLOROP_TYPE_FIXED_MATRIX);
+	if (!colorop)
+		return NULL;
+
+	so.type = COLOROP_OBJECT_TYPE_FIXED_MATRIX;
+	so.fixed_matrix = WDRM_COLOROP_FIXED_MATRIX__COUNT;
+
+	for (unsigned i = 0; i < ARRAY_LENGTH(fixed_matrix_info_map); i++) {
+		if (fixed_matrix_info_map[i].coefficients == color_rep->matrix_coefficients &&
+		    fixed_matrix_info_map[i].range == color_rep->quant_range) {
+			so.fixed_matrix = fixed_matrix_info_map[i].wdrm;
+			break;
+		}
+	}
+	weston_assert_enum_ne(compositor, so.fixed_matrix,
+			      WDRM_COLOROP_FIXED_MATRIX__COUNT);
+
+	prop_info = &colorop->props[WDRM_COLOROP_FIXED_MATRIX].enum_values[so.fixed_matrix];
+	if (!prop_info->valid)
+		return NULL;
+
+	return drm_colorop_state_create(pipeline_state, colorop, so);
+}
+
 static struct drm_colorop_state *
 curve_create_colorop_state(struct drm_color_pipeline_state *pipeline_state,
 			   const struct drm_colorop *previous_colorop,
