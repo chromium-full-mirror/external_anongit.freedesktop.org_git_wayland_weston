@@ -217,7 +217,7 @@ weston_cm_send_tf(struct cm_image_desc_info *cm_image_desc_info,
 	case WESTON_TF_BT1886:
 	case WESTON_TF_GAMMA22:
 	case WESTON_TF_GAMMA28:
-	case WESTON_TF_SRGB:
+	case WESTON_TF_COMPOUND_POWER_2_4:
 	case WESTON_TF_EXT_SRGB:
 	case WESTON_TF_ST240:
 	case WESTON_TF_ST428:
@@ -1688,6 +1688,9 @@ bind_color_management(struct wl_client *client, void *data, uint32_t version,
 			continue;
 		tf = weston_color_tf_info_from(i);
 		weston_assert_ptr_not_null(compositor, tf);
+		if (version < tf->protocol_since)
+			continue;
+
 		wp_color_manager_v1_send_supported_tf_named(resource,
 							    tf->protocol_tf);
 	}

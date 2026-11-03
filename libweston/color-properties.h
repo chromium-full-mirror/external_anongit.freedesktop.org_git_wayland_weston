@@ -119,6 +119,9 @@ struct weston_color_tf_info {
         /** CM&HDR protocol extension value representing the tf. */
         uint32_t protocol_tf;
 
+	/** CM&HDR protocol required interface version */
+	uint32_t protocol_since;
+
 	/** H.273 CICP TransferCharacteristics value, or 0 if no match */
 	uint8_t cicp;
 

@@ -124,6 +124,16 @@ weston_color_profile_param_builder_set_version(struct weston_color_profile_param
 	builder->protocol_version = protocol_version;
 }
 
+static bool
+builder_check_version(struct weston_color_profile_param_builder *builder,
+		      uint32_t protocol_since)
+{
+	if (builder->protocol_version == 0)
+		return true;
+
+	return builder->protocol_version >= protocol_since;
+}
+
 /**
  * Destroys a struct weston_color_profile_param_builder object.
  *
@@ -429,10 +439,19 @@ weston_color_profile_param_builder_set_tf_named(struct weston_color_profile_para
 		store_error(builder, WESTON_COLOR_PROFILE_PARAM_BUILDER_ERROR_INVALID_TF,
 			    "%d is not a known tf", tf);
 		success = false;
-	} else if (cm && !((cm->supported_tf_named >> tf) & 1)) {
-		store_error(builder, WESTON_COLOR_PROFILE_PARAM_BUILDER_ERROR_INVALID_TF,
-			    "%s not supported by the color manager", info->desc);
-		success = false;
+	} else {
+		if (!builder_check_version(builder, info->protocol_since)) {
+			store_error(builder, WESTON_COLOR_PROFILE_PARAM_BUILDER_ERROR_INVALID_TF,
+				    "%s not supported by the protocol interface version %u",
+				    info->desc, builder->protocol_version);
+			success = false;
+		}
+
+		if (cm && !((cm->supported_tf_named >> tf) & 1)) {
+			store_error(builder, WESTON_COLOR_PROFILE_PARAM_BUILDER_ERROR_INVALID_TF,
+				    "%s not supported by the color manager", info->desc);
+			success = false;
+		}
 	}
 
 	if (!success)

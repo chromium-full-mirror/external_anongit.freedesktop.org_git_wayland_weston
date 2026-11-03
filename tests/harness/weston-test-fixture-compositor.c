@@ -535,7 +535,7 @@ tf_to_name(const struct weston_color_tf_info *info)
 	case WESTON_TF_HLG:
 		return weston_color_tf_info_get_codeword(info);
 	/* The following cannot be set by 'tf_named' key. */
-	case WESTON_TF_SRGB:
+	case WESTON_TF_COMPOUND_POWER_2_4:
 	case WESTON_TF_EXT_SRGB:
 	case WESTON_TF_POWER:
 		break;
