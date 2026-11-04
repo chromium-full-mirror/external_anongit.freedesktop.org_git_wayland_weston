@@ -85,6 +85,7 @@ stages:
   - "Base container"
   - "Full build and test"
   - "No-GL/Vulkan build and test"
+  - "GL ES 2 test"
   - "Other builds"
   - pages
 
@@ -326,6 +327,27 @@ aarch64-debian-container_prep:
     - $BUILDDIR/meson-logs
     - $PREFIX
 
+# After building and testing, a job may need to be repeated with different
+# environment variables. This allows re-running it without rebuilding.
+.test-no-build:
+  extends:
+  - .default-rules
+  before_script:
+  - export PATH=~/.local/bin:$PATH
+  - export TESTS_RES_PATH="$BUILDDIR/tests-res.txt"
+  - rm -rf "$BUILDDIR"/meson-logs/* "$BUILDDIR"/*.png "$BUILDDIR"/dmesg.log
+  script:
+    - "${CI_PROJECT_DIR}/.gitlab-ci/test.sh"
+  artifacts:
+    name: weston-$CI_COMMIT_SHA
+    when: always
+    paths:
+    - $BUILDDIR/*.png
+    - $BUILDDIR/meson-logs
+    - $BUILDDIR/dmesg.log
+    reports:
+      junit: $BUILDDIR/meson-logs/testlog.junit.xml
+
 # OS/architecture-specific variants
 .build-env-debian-lts-x86_64:
   extends:
@@ -466,6 +488,25 @@ x86_64-debian-full-build:
   extends:
     - .test-env-debian-x86_64
     - .build-options-full-v2
+  artifacts:
+    paths:
+    - $BUILDDIR
+    - $PREFIX
+
+x86_64-debian-gles2-test:
+  extends:
+    - .build-env-debian-x86_64
+    - .test-no-build
+  tags:
+    - kvm
+  stage: "GL ES 2 test"
+  variables:
+    BUILDDIR: $CI_PROJECT_DIR/build-weston-x86_64-debian-full-build
+    MESON_TEST_SETUP: "force_gles2"
+    MESON_TEST_SUITE: "gles2"
+  needs:
+    - job: x86_64-debian-full-build
+      artifacts: true
 
 aarch64-debian-lts-full-build:
   extends:
