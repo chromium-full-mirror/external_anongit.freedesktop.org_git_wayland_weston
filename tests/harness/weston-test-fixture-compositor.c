@@ -135,6 +135,13 @@ get_lock_path(void)
 	return lock_path;
 }
 
+static bool
+is_gles2_forced(void)
+{
+	char *version_str = getenv("MESA_GLES_VERSION_OVERRIDE");
+	return version_str && strcmp(version_str, "2.0") == 0;
+}
+
 /*
  * DRM-backend tests need to be run sequentially, since there can only be
  * one user at a time with master status in a DRM KMS device. Since the
@@ -426,6 +433,12 @@ execute_compositor(const struct compositor_setup *setup,
 		ret = RESULT_SKIP;
 	}
 #endif
+
+	/* Avoid running non-GL fixtures if GL ES 2.0 is being forced. */
+	if (is_gles2_forced() && (setup->renderer != WESTON_RENDERER_GL)) {
+		fprintf(stderr, "GL ES 2.0 forced, skipping non-GL test.\n");
+		ret = RESULT_SKIP;
+	}
 
 	test_data.test_quirks = setup->test_quirks;
 	test_data.test_private_data = data;
