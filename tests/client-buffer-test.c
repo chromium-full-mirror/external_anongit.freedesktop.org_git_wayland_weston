@@ -1964,7 +1964,7 @@ test_client_buffer(const struct client_buffer_case *cb_case,
 
 /*
  * We do not require any format to pass, unless we run in CI where
- * WESTON_TEST_SKIP_IS_FAILURE is defined. In CI we require the hardcoded
+ * WESTON_TEST_SKIP_IS_FAILURE is set. In CI we require the hardcoded
  * list of formats to be supported and correct. Outside of CI we might running
  * with various graphics drivers with different supported formats, so we cannot
  * require a big list of formats to succeed.
@@ -1975,14 +1975,14 @@ test_client_buffer(const struct client_buffer_case *cb_case,
 static bool
 format_must_pass(uint32_t drm_format, const uint32_t *must_pass, const size_t num)
 {
-#if WESTON_TEST_SKIP_IS_FAILURE
-	if (!must_pass || num == 0)
-		return false;
+	if (weston_test_skip_is_failure()) {
+		if (!must_pass || num == 0)
+			return false;
 
-	for (size_t i = 0; i < num; i++)
-		if (must_pass[i] == drm_format)
-			return true;
-#endif
+		for (size_t i = 0; i < num; i++)
+			if (must_pass[i] == drm_format)
+				return true;
+	}
 
 	return false;
 }
@@ -1990,21 +1990,19 @@ format_must_pass(uint32_t drm_format, const uint32_t *must_pass, const size_t nu
 static enum test_result_code
 skip_is_just_fine(enum test_result_code c)
 {
-#if WESTON_TEST_SKIP_IS_FAILURE
-	if (c == RESULT_SKIP)
+	if (weston_test_skip_is_failure() && c == RESULT_SKIP)
 		return RESULT_OK;
-#endif
+
 	return c;
 }
 
 static enum test_result_code
 this_is_an_unwanted_case(void)
 {
-#if WESTON_TEST_SKIP_IS_FAILURE
-	return RESULT_OK;
-#else
+	if (weston_test_skip_is_failure())
+		return RESULT_OK;
+
 	return RESULT_SKIP;
-#endif
 }
 
 /*

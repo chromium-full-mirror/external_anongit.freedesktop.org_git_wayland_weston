@@ -434,6 +434,7 @@ aarch64-debian-container_prep:
   stage: "Full build and test"
   variables:
     BUILD_COVERAGE: y
+    MESON_TEST_SETUP: 'test_skip_is_failure'
     MESON_OPTIONS: >
       -Doptimization=0
       -Db_coverage=true
@@ -441,16 +442,15 @@ aarch64-debian-container_prep:
       -Dperfetto=true
       -Dperfetto:werror=false
       -Dwerror=true
-      -Dtest-skip-is-failure=true
 
 # Full build, (without gcov and perfetto)
 .build-options-full-v2:
   stage: "Full build and test"
   variables:
+    MESON_TEST_SETUP: 'test_skip_is_failure'
     MESON_OPTIONS: >
       -Doptimization=0
       -Dwerror=true
-      -Dtest-skip-is-failure=true
 
 x86_64-debian-lts-full-build:
   extends:

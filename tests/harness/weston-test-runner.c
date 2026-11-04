@@ -283,6 +283,20 @@ for_each_test_case(struct wet_testsuite_data *data, weston_test_cb cb)
 	}
 }
 
+/** Check whether skipped tests should be treated as failures
+ *
+ * The WESTON_TEST_SKIP_IS_FAILURE environment variable makes skipped tests fail
+ * instead.
+ *
+ * \ingroup testharness
+ */
+bool
+weston_test_skip_is_failure(void)
+{
+	char *str = getenv("WESTON_TEST_SKIP_IS_FAILURE");
+	return str && (strcmp(str, "true") == 0);
+}
+
 static const char *
 result_to_str(enum test_result_code ret)
 {
@@ -290,14 +304,14 @@ result_to_str(enum test_result_code ret)
 		[RESULT_FAIL] = "fail",
 		[RESULT_HARD_ERROR] = "hard error",
 		[RESULT_OK] = "ok",
-#if WESTON_TEST_SKIP_IS_FAILURE
-		[RESULT_SKIP] = "skip error",
-#else
 		[RESULT_SKIP] = "skip",
-#endif
 	};
 
 	test_assert_true(ret >= 0 && ret < ARRAY_LENGTH(names));
+
+	if (ret == RESULT_SKIP && weston_test_skip_is_failure())
+		return "skip error";
+
 	return names[ret];
 }
 
@@ -336,9 +350,8 @@ run_case(struct wet_testsuite_data *suite_data,
 	case RESULT_SKIP:
 		suite_data->skipped++;
 		skip = " # SKIP";
-#if WESTON_TEST_SKIP_IS_FAILURE
-		fail = "not ";
-#endif
+		if (weston_test_skip_is_failure())
+			fail = "not ";
 		break;
 	}
 
@@ -385,9 +398,8 @@ skip_case(struct wet_testsuite_data *suite_data,
 	const char *skip_error = "";
 	int iteration_nr = iteration + 1;
 
-#if WESTON_TEST_SKIP_IS_FAILURE
-	skip_error = "not ";
-#endif
+	if (weston_test_skip_is_failure())
+		skip_error = "not ";
 
 	suite_data->counter++;
 	printf("%sok %d %s %s/%d # SKIP fixture\n",
@@ -537,10 +549,8 @@ weston_test_harness_destroy(struct weston_test_harness *harness)
 static enum test_result_code
 counts_to_result(const struct wet_testsuite_data *data)
 {
-#if WESTON_TEST_SKIP_IS_FAILURE
-	if (data->skipped > 0)
+	if (weston_test_skip_is_failure() && data->skipped > 0)
 		return RESULT_FAIL;
-#endif
 
 	/* RESULT_SKIP is reserved for fixture setup itself skipping everything */
 	if (data->total == data->passed + data->skipped)
@@ -746,11 +756,10 @@ main(int argc, char *argv[])
 
 		if (ret == RESULT_SKIP) {
 			tap_skip_fixture(&harness->data);
-#if WESTON_TEST_SKIP_IS_FAILURE
+			if (!weston_test_skip_is_failure())
+				continue;
+
 			ret = RESULT_FAIL;
-#else
-			continue;
-#endif
 		}
 
 		if (ret != RESULT_OK && result != RESULT_HARD_ERROR)

@@ -197,6 +197,9 @@ get_test_fixture_index(void);
 int
 get_test_fixture_number_from_harness(struct weston_test_harness *harness);
 
+bool
+weston_test_skip_is_failure(void);
+
 /** Metadata for fixture setup array elements
  *
  * Every type used as a fixture setup array's elements needs one member of

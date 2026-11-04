@@ -32,7 +32,11 @@ export WESTON_CI_LEAK_DL_HANDLES=$WESTON_CI_LEAK_DL_HANDLES:$(find /usr/local -n
 # run the tests and save the exit status
 # we give ourselves a very generous timeout multiplier due to ASan overhead
 echo 0x1f > /sys/module/drm/parameters/debug
-seatd-launch -- meson test --no-rebuild --timeout-multiplier 4
+meson_test_args="--no-rebuild --timeout-multiplier 4"
+if [[ -n "${MESON_TEST_SETUP}" ]]; then
+	meson_test_args+=" --setup $MESON_TEST_SETUP"
+fi
+seatd-launch -- meson test $meson_test_args
 # note that we need to store the return value from the tests in order to
 # determine if the test suite ran successfully or not.
 TEST_RES=$?
