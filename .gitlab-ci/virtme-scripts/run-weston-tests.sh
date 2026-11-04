@@ -36,6 +36,9 @@ meson_test_args="--no-rebuild --timeout-multiplier 4"
 if [[ -n "${MESON_TEST_SETUP}" ]]; then
 	meson_test_args+=" --setup $MESON_TEST_SETUP"
 fi
+if [[ -n "${MESON_TEST_SUITE}" ]]; then
+	meson_test_args+=" --suite $MESON_TEST_SUITE"
+fi
 seatd-launch -- meson test $meson_test_args
 # note that we need to store the return value from the tests in order to
 # determine if the test suite ran successfully or not.

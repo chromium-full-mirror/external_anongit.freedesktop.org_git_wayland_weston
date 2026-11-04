@@ -7,7 +7,7 @@ cd "$BUILDDIR"
 test -n "${QEMU_SMP}" || QEMU_SMP=${FDO_CI_CONCURRENT:-4}
 virtme-run --rw --pwd --kimg /weston-virtme/${KERNEL_IMAGE} \
 	--kopt quiet --kopt log_buf_len=2M --kopt vkms.enable_plane_pipeline=1 \
-	--script-sh "export MESON_TEST_SETUP=$MESON_TEST_SETUP; ../.gitlab-ci/virtme-scripts/run-weston-tests.sh" \
+	--script-sh "export MESON_TEST_SETUP=$MESON_TEST_SETUP MESON_TEST_SUITE=$MESON_TEST_SUITE; ../.gitlab-ci/virtme-scripts/run-weston-tests.sh" \
 	--qemu-opts -m 4096 -smp ${QEMU_SMP}
 TEST_RES=$(cat $TESTS_RES_PATH)
 rm $TESTS_RES_PATH

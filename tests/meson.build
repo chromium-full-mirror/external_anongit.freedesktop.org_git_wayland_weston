@@ -4,24 +4,35 @@ tests = [
 	{
 		'name': 'alpha-blending',
 		'dep_objs': dep_libm,
+		'suite': 'gles2',
 	},
-	{	'name': 'alpha-modifier', },
+	{
+		'name': 'alpha-modifier',
+		'suite': 'gles2',
+	},
 	{	'name': 'alpha-modifier-smoke', },
 	{	'name': 'assert', },
 	{	'name': 'bad-buffer', },
-	{	'name': 'buffer-transforms', },
+	{
+		'name': 'buffer-transforms',
+		'suite': 'gles2',
+	},
 	{
 		'name': 'client-buffer',
 		'dep_objs': [
 			dep_libdrm_headers,
 			dep_libm,
 		],
+		'suite': 'gles2',
 	},
 	{
 		'name': 'color-math',
 		'dep_objs': dep_libm,
 	},
-	{	'name': 'color-effects', },
+	{
+		'name': 'color-effects',
+		'suite': 'gles2',
+	},
 	{
 		'name': 'color-output-parsing',
 		'dep_objs': [
@@ -43,6 +54,7 @@ tests = [
 			'color-representation-common.h',
 			'color-representation-renderer-test.c',
 		],
+		'suite': 'gles2',
 	},
 	{	'name': 'color-representation-protocol', },
 	{	'name': 'commit-timing', },
@@ -57,7 +69,11 @@ tests = [
 	},
         {       'name': 'custom-env', },
 	{	'name': 'devices', },
-	{	'name': 'dmabuf-screenshot', 'run_exclusive': true },
+	{
+		'name': 'dmabuf-screenshot',
+		'run_exclusive': true,
+		'suite': 'gles2',
+	},
 	{
 		'name': 'drm-formats',
 		'dep_objs': dep_libdrm_headers,
@@ -107,9 +123,18 @@ tests = [
 		],
 		'dep_objs': [ dep_libdrm_headers ],
 	},
-	{	'name': 'output-damage', },
-	{	'name': 'output-decorations', },
-	{	'name': 'output-transforms', },
+	{
+		'name': 'output-damage',
+		'suite': 'gles2',
+	},
+	{
+		'name': 'output-decorations',
+		'suite': 'gles2',
+	},
+	{
+		'name': 'output-transforms',
+		'suite': 'gles2',
+	},
 	{	'name': 'plugin-registry', },
         {       'name': 'paint-node', },
 	{
@@ -121,7 +146,10 @@ tests = [
 			input_timestamps_unstable_v1_protocol_c,
 		],
 	},
-	{	'name': 'pointer-shot', },
+	{
+		'name': 'pointer-shot',
+		'suite': 'gles2',
+	},
 	{	'name': 'presentation', },
 	{
 		'name': 'roles',
@@ -131,10 +159,16 @@ tests = [
 			xdg_shell_protocol_c,
 		],
 	},
-	{	'name': 'single-pixel-buffer', },
+	{
+		'name': 'single-pixel-buffer',
+		'suite': 'gles2',
+	},
 	{	'name': 'string', },
 	{	'name': 'subsurface', },
-	{	'name': 'subsurface-shot', },
+	{
+		'name': 'subsurface-shot',
+		'suite': 'gles2',
+	},
 	{	'name': 'surface', },
 	{	'name': 'surface-global', },
 	{	'name': 'tearing-control', },
@@ -149,7 +183,10 @@ tests = [
 		],
 	},
 	{	'name': 'viewporter', },
-	{	'name': 'viewporter-shot', },
+	{
+		'name': 'viewporter-shot',
+		'suite': 'gles2',
+	},
 	{	'name': 'safe-signal', },
 	{	'name': 'safe-signal-output-removal',
 		'sources': [
@@ -301,6 +338,7 @@ test_config_h.set_quoted('WESTON_LUA_SHELL_DIR', join_paths(meson.current_source
 test_config_h.set_quoted('TESTSUITE_PLUGIN_PATH', exe_plugin_test.full_path())
 configure_file(output: 'test-config.h', configuration: test_config_h)
 
+add_test_setup('force_gles2', env: {'MESA_GLES_VERSION_OVERRIDE': '2.0'})
 add_test_setup('test_skip_is_failure', env: {'WESTON_TEST_SKIP_IS_FAILURE': 'true'})
 
 test_env = {}
@@ -342,6 +380,7 @@ foreach t : tests
 		t_exe,
                 env: test_env,
 		depends: t.get('test_deps', []),
+		suite: t.get('suite', []),
 		timeout: 120,
 		protocol: 'tap',
 		is_parallel: not run_exclusive
