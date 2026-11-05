@@ -986,6 +986,25 @@ static const struct parametric_case parametric_cases[] = {
 	  .error_point = ERROR_POINT_IMAGE_DESC,
 	},
 	{
+	  /* Invalid max cll (max cll > max target luminance);
+	   * protocol error. */
+	  .protocol_version = 1,
+	  .primaries_named = WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
+	  .primaries = NULL,
+	  .tf_named = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22,
+	  .tf_power = NOT_SET,
+	  .primaries_min_lum = NOT_SET,
+	  .primaries_max_lum = NOT_SET,
+	  .primaries_ref_lum = NOT_SET,
+	  .target_primaries = NULL,
+	  .target_min_lum = 6.0f,
+	  .target_max_lum = 7,
+	  .target_max_cll = 8,
+	  .target_max_fall = NOT_SET,
+	  .expected_error = WP_IMAGE_DESCRIPTION_CREATOR_PARAMS_V1_ERROR_INVALID_LUMINANCE,
+	  .error_point = ERROR_POINT_IMAGE_DESC,
+	},
+	{
 	  /* Invalid max fall (max fall < min target luminance);
 	   * protocol error. */
 	  .protocol_version = 1,
@@ -1001,6 +1020,44 @@ static const struct parametric_case parametric_cases[] = {
 	  .target_max_lum = 7,
 	  .target_max_cll = NOT_SET,
 	  .target_max_fall = 5,
+	  .expected_error = WP_IMAGE_DESCRIPTION_CREATOR_PARAMS_V1_ERROR_INVALID_LUMINANCE,
+	  .error_point = ERROR_POINT_IMAGE_DESC,
+	},
+	{
+	  /* Invalid max fall (max fall > max target luminance);
+	   * protocol error. */
+	  .protocol_version = 1,
+	  .primaries_named = WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
+	  .primaries = NULL,
+	  .tf_named = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22,
+	  .tf_power = NOT_SET,
+	  .primaries_min_lum = NOT_SET,
+	  .primaries_max_lum = NOT_SET,
+	  .primaries_ref_lum = NOT_SET,
+	  .target_primaries = NULL,
+	  .target_min_lum = 6.0f,
+	  .target_max_lum = 7,
+	  .target_max_cll = NOT_SET,
+	  .target_max_fall = 8,
+	  .expected_error = WP_IMAGE_DESCRIPTION_CREATOR_PARAMS_V1_ERROR_INVALID_LUMINANCE,
+	  .error_point = ERROR_POINT_IMAGE_DESC,
+	},
+	{
+	  /* Invalid max fall and max cll combination (max fall > max cll);
+	   * protocol error. */
+	  .protocol_version = 1,
+	  .primaries_named = WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
+	  .primaries = NULL,
+	  .tf_named = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22,
+	  .tf_power = NOT_SET,
+	  .primaries_min_lum = NOT_SET,
+	  .primaries_max_lum = NOT_SET,
+	  .primaries_ref_lum = NOT_SET,
+	  .target_primaries = NULL,
+	  .target_min_lum = 2.0f,
+	  .target_max_lum = 10,
+	  .target_max_cll = 7,
+	  .target_max_fall = 8,
 	  .expected_error = WP_IMAGE_DESCRIPTION_CREATOR_PARAMS_V1_ERROR_INVALID_LUMINANCE,
 	  .error_point = ERROR_POINT_IMAGE_DESC,
 	},
