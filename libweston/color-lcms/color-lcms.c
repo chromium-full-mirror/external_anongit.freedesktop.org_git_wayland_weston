@@ -517,6 +517,7 @@ weston_color_manager_create(struct weston_compositor *compositor)
 	cm->base.supported_rendering_intents = (1 << WESTON_RENDER_INTENT_PERCEPTUAL) |
 					    /* (1 << WESTON_RENDER_INTENT_SATURATION) | */
 					       (1 << WESTON_RENDER_INTENT_ABSOLUTE) |
+					       (1 << WESTON_RENDER_INTENT_ABSOLUTE_NO_ADAPTATION) |
 					       (1 << WESTON_RENDER_INTENT_RELATIVE) |
 					       (1 << WESTON_RENDER_INTENT_RELATIVE_BPC);
 

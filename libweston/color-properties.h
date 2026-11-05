@@ -56,6 +56,7 @@ enum weston_render_intent {
 	WESTON_RENDER_INTENT_SATURATION,
 	WESTON_RENDER_INTENT_ABSOLUTE,
 	WESTON_RENDER_INTENT_RELATIVE_BPC,
+	WESTON_RENDER_INTENT_ABSOLUTE_NO_ADAPTATION,
 };
 
 struct weston_color_feature_info {
@@ -78,6 +79,9 @@ struct weston_render_intent_info {
 
 	/** CM&HDR protocol extension value representing the intent. */
 	uint32_t protocol_intent;
+
+	/** CM&HDR protocol required interface version */
+	uint32_t protocol_since;
 
 	/** LittleCMS representation. */
 	uint32_t lcms_intent;

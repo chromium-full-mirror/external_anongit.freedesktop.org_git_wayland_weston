@@ -1716,6 +1716,9 @@ bind_color_management(struct wl_client *client, void *data, uint32_t version,
 		if (!((cm->supported_rendering_intents >> i) & 1))
 			continue;
 		render_intent = weston_render_intent_info_from(compositor, i);
+		if (version < render_intent->protocol_since)
+			continue;
+
 		wp_color_manager_v1_send_supported_intent(resource,
 							  render_intent->protocol_intent);
 	}

@@ -125,6 +125,14 @@ static const struct weston_render_intent_info render_intent_info_table[] = {
 		LCMS_INTENT(INTENT_RELATIVE_COLORIMETRIC),
 		.bps = true,
 	},
+	{
+		.intent = WESTON_RENDER_INTENT_ABSOLUTE_NO_ADAPTATION,
+		.desc = "ICC-absolute colorimetric without adaptation",
+		.protocol_intent = WP_COLOR_MANAGER_V1_RENDER_INTENT_ABSOLUTE_NO_ADAPTATION,
+		.protocol_since = WP_COLOR_MANAGER_V1_RENDER_INTENT_ABSOLUTE_NO_ADAPTATION_SINCE_VERSION,
+		LCMS_INTENT(INTENT_ABSOLUTE_COLORIMETRIC),
+		.bps = false,
+	},
 };
 
 static const struct weston_color_primaries_info color_primaries_info_table[] = {
