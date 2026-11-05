@@ -66,10 +66,48 @@ build_sRGB_icc_profile(const char *filename)
 	cmsCloseProfile(profile);
 }
 
-static struct color_manager_client *
-color_manager_get(struct client *client)
+static enum test_result_code
+fixture_setup(struct weston_test_harness *harness)
 {
-	struct color_manager_client *cm = client_get_color_manager(client, 1);
+	struct compositor_setup setup;
+
+	compositor_setup_defaults(&setup);
+	setup.shell = SHELL_TEST_DESKTOP;
+	setup.refresh = HIGHEST_OUTPUT_REFRESH; /* create_client_and_test_surface() */
+	setup.logging_scopes = "log,color-lcms-profiles";
+
+	/* Create the sRGB ICC profile. We do that only once for this test
+	 * program. */
+	if (strlen(srgb_icc_profile_path) == 0) {
+		char *tmp;
+
+		tmp = output_filename_for_test_program(THIS_TEST_NAME,
+						       NULL, "icm");
+		test_assert_int_lt(strlen(tmp), ARRAY_LENGTH(srgb_icc_profile_path));
+		strcpy(srgb_icc_profile_path, tmp);
+		free(tmp);
+
+		build_sRGB_icc_profile(srgb_icc_profile_path);
+	}
+
+	weston_ini_setup(&setup,
+			 cfgln("[core]"),
+			 cfgln("color-management=true"));
+
+	return weston_test_harness_execute_as_client(harness, &setup);
+}
+DECLARE_FIXTURE_SETUP(fixture_setup);
+
+
+/** Check protocol interface version 1 advertisements */
+static enum test_result_code
+advertisements1(struct wet_testsuite_data *suite_data)
+{
+	struct client *client;
+	struct color_manager_client *cm;
+
+	client = create_client();
+	cm = client_get_color_manager(client, 1);
 
 	/* Weston supports all color features. */
 	test_assert_u32_eq(cm->supported_features,
@@ -110,43 +148,10 @@ color_manager_get(struct client *client)
 			   (1 << WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR) |
 			   (1 << WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ));
 
-	test_assert_true(cm->init_done);
+	client_destroy(client);
 
-	return cm;
+	return RESULT_OK;
 }
-
-static enum test_result_code
-fixture_setup(struct weston_test_harness *harness)
-{
-	struct compositor_setup setup;
-
-	compositor_setup_defaults(&setup);
-	setup.shell = SHELL_TEST_DESKTOP;
-	setup.refresh = HIGHEST_OUTPUT_REFRESH; /* create_client_and_test_surface() */
-	setup.logging_scopes = "log,color-lcms-profiles";
-
-	/* Create the sRGB ICC profile. We do that only once for this test
-	 * program. */
-	if (strlen(srgb_icc_profile_path) == 0) {
-		char *tmp;
-
-		tmp = output_filename_for_test_program(THIS_TEST_NAME,
-						       NULL, "icm");
-		test_assert_int_lt(strlen(tmp), ARRAY_LENGTH(srgb_icc_profile_path));
-		strcpy(srgb_icc_profile_path, tmp);
-		free(tmp);
-
-		build_sRGB_icc_profile(srgb_icc_profile_path);
-	}
-
-	weston_ini_setup(&setup,
-			 cfgln("[core]"),
-			 cfgln("color-management=true"));
-
-	return weston_test_harness_execute_as_client(harness, &setup);
-}
-DECLARE_FIXTURE_SETUP(fixture_setup);
-
 
 static enum test_result_code
 create_image_description_before_setting_icc_file(struct wet_testsuite_data *suite_data)
@@ -157,7 +162,7 @@ create_image_description_before_setting_icc_file(struct wet_testsuite_data *suit
 	struct wp_image_description_v1 *image_desc;
 
 	client = create_client_and_test_surface(100, 100, 100, 100);
-	cm = color_manager_get(client);
+	cm = client_get_color_manager(client, 1);
 
 	image_descr_creator_icc =
 		wp_color_manager_v1_create_icc_creator(cm->manager_proxy);
@@ -188,7 +193,7 @@ set_unreadable_icc_fd(struct wet_testsuite_data *suite_data)
 	struct stat st;
 
 	client = create_client_and_test_surface(100, 100, 100, 100);
-	cm = color_manager_get(client);
+	cm = client_get_color_manager(client, 1);
 
 	image_descr_creator_icc =
 		wp_color_manager_v1_create_icc_creator(cm->manager_proxy);
@@ -223,7 +228,7 @@ set_too_short_icc_fd(struct wet_testsuite_data *suite_data)
 	struct stat st;
 
 	client = create_client_and_test_surface(100, 100, 100, 100);
-	cm = color_manager_get(client);
+	cm = client_get_color_manager(client, 1);
 
 	image_descr_creator_icc =
 		wp_color_manager_v1_create_icc_creator(cm->manager_proxy);
@@ -257,7 +262,7 @@ set_bad_icc_size_zero(struct wet_testsuite_data *suite_data)
 	int32_t icc_fd;
 
 	client = create_client_and_test_surface(100, 100, 100, 100);
-	cm = color_manager_get(client);
+	cm = client_get_color_manager(client, 1);
 
 	image_descr_creator_icc =
 		wp_color_manager_v1_create_icc_creator(cm->manager_proxy);
@@ -287,7 +292,7 @@ set_bad_icc_non_seekable(struct wet_testsuite_data *suite_data)
 	int32_t fds[2];
 
 	client = create_client_and_test_surface(100, 100, 100, 100);
-	cm = color_manager_get(client);
+	cm = client_get_color_manager(client, 1);
 
 	image_descr_creator_icc =
 		wp_color_manager_v1_create_icc_creator(cm->manager_proxy);
@@ -320,7 +325,7 @@ set_icc_twice(struct wet_testsuite_data *suite_data)
 	struct stat st;
 
 	client = create_client_and_test_surface(100, 100, 100, 100);
-	cm = color_manager_get(client);
+	cm = client_get_color_manager(client, 1);
 
 	image_descr_creator_icc =
 		wp_color_manager_v1_create_icc_creator(cm->manager_proxy);
@@ -355,7 +360,7 @@ create_icc_image_description_no_info(struct wet_testsuite_data *suite_data)
 	struct wp_image_description_info_v1 *proxy;
 
 	client = create_client_and_test_surface(100, 100, 100, 100);
-	cm = color_manager_get(client);
+	cm = client_get_color_manager(client, 1);
 
 	/* Create image description based on ICC profile */
 	image_descr = image_description_create_for_icc(cm, srgb_icc_profile_path);
@@ -383,7 +388,7 @@ create_image_description_soft_fail(struct wet_testsuite_data *suite_data)
 	enum image_description_status status;
 
 	client = create_client_and_test_surface(100, 100, 100, 100);
-	cm = color_manager_get(client);
+	cm = client_get_color_manager(client, 1);
 
 	image_descr = image_description_create_soft_fail(cm);
 	status = image_description_wait(client, image_descr);
@@ -404,7 +409,7 @@ set_failed_image_description(struct wet_testsuite_data *suite_data)
 	struct wp_color_management_surface_v1 *cm_surface;
 
 	client = create_client_and_test_surface(100, 100, 100, 100);
-	cm = color_manager_get(client);
+	cm = client_get_color_manager(client, 1);
 
 	cm_surface = wp_color_manager_v1_get_surface(cm->manager_proxy, client->surface->wl_surface);
 
@@ -431,7 +436,7 @@ failed_image_description_get_info(struct wet_testsuite_data *suite_data)
 	struct wp_image_description_info_v1 *proxy;
 
 	client = create_client_and_test_surface(100, 100, 100, 100);
-	cm = color_manager_get(client);
+	cm = client_get_color_manager(client, 1);
 
 	/*
 	 * Create a soft-failed image description. Getting its information
@@ -458,7 +463,7 @@ get_surface_twice_bad(struct wet_testsuite_data *suite_data)
 	struct wp_color_management_surface_v1 *cm_surface[2];
 
 	client = create_client_and_test_surface(100, 100, 100, 100);
-	cm = color_manager_get(client);
+	cm = client_get_color_manager(client, 1);
 
 	cm_surface[0] = wp_color_manager_v1_get_surface(cm->manager_proxy, client->surface->wl_surface);
 	cm_surface[1] = wp_color_manager_v1_get_surface(cm->manager_proxy, client->surface->wl_surface);
@@ -481,7 +486,7 @@ get_surface_twice_good(struct wet_testsuite_data *suite_data)
 	struct wp_color_management_surface_v1 *cm_surface;
 
 	client = create_client_and_test_surface(100, 100, 100, 100);
-	cm = color_manager_get(client);
+	cm = client_get_color_manager(client, 1);
 
 	cm_surface = wp_color_manager_v1_get_surface(cm->manager_proxy, client->surface->wl_surface);
 	wp_color_management_surface_v1_destroy(cm_surface);
@@ -502,7 +507,7 @@ set_surface_image_description(struct wet_testsuite_data *suite_data)
 	struct wp_color_management_surface_v1 *cm_surface;
 
 	client = create_client_and_test_surface(100, 100, 100, 100);
-	cm = color_manager_get(client);
+	cm = client_get_color_manager(client, 1);
 
 	cm_surface = wp_color_manager_v1_get_surface(cm->manager_proxy, client->surface->wl_surface);
 
@@ -535,7 +540,7 @@ set_inert_surface_image_description(struct wet_testsuite_data *suite_data)
 	struct wp_color_management_surface_v1 *cm_surface;
 
 	client = create_client_and_test_surface(100, 100, 100, 100);
-	cm = color_manager_get(client);
+	cm = client_get_color_manager(client, 1);
 
 	/* Get guaranteed good image description. */
 	image_descr = image_description_create_for_preferred(cm, client->surface, PREFERRED_ORIGINAL);
@@ -569,7 +574,7 @@ set_bad_rendering_intent(struct wet_testsuite_data *suite_data)
 	struct wp_color_management_surface_v1 *cm_surface;
 
 	client = create_client_and_test_surface(100, 100, 100, 100);
-	cm = color_manager_get(client);
+	cm = client_get_color_manager(client, 1);
 
 	/* Get guaranteed good image description. */
 	image_descr = image_description_create_for_preferred(cm, client->surface, PREFERRED_ORIGINAL);
@@ -599,7 +604,7 @@ inert_get_preferred_image_description(struct wet_testsuite_data *suite_data)
 	struct wp_color_management_surface_feedback_v1 *cm_feedback;
 
 	client = create_client_and_test_surface(100, 100, 100, 100);
-	cm = color_manager_get(client);
+	cm = client_get_color_manager(client, 1);
 
 	cm_feedback = wp_color_manager_v1_get_surface_feedback(cm->manager_proxy,
 							       client->surface->wl_surface);
@@ -1011,7 +1016,7 @@ create_parametric_image_description(struct wet_testsuite_data *suite_data,
 	struct image_description *image_desc = NULL;
 
 	client = create_client();
-	cm = color_manager_get(client);
+	cm = client_get_color_manager(client, 1);
 
 	image_desc_creator_param = color_manager_create_param(cm);
 
@@ -1141,7 +1146,7 @@ set_primaries_named_twice(struct wet_testsuite_data *suite_data)
 	struct wp_image_description_creator_params_v1 *image_desc_creator_param;
 
 	client = create_client();
-	cm = color_manager_get(client);
+	cm = client_get_color_manager(client, 1);
 
 	image_desc_creator_param = color_manager_create_param(cm);
 	wp_image_description_creator_params_v1_set_primaries_named(image_desc_creator_param,
@@ -1166,7 +1171,7 @@ set_primaries_twice(struct wet_testsuite_data *suite_data)
 	struct wp_image_description_creator_params_v1 *image_desc_creator_param;
 
 	client = create_client();
-	cm = color_manager_get(client);
+	cm = client_get_color_manager(client, 1);
 
 	image_desc_creator_param = color_manager_create_param(cm);
 	param_creator_set_primaries(image_desc_creator_param, &color_gamut_sRGB);
@@ -1189,7 +1194,7 @@ set_primaries_then_primaries_named(struct wet_testsuite_data *suite_data)
 	struct wp_image_description_creator_params_v1 *image_desc_creator_param;
 
 	client = create_client();
-	cm = color_manager_get(client);
+	cm = client_get_color_manager(client, 1);
 
 	image_desc_creator_param = color_manager_create_param(cm);
 	param_creator_set_primaries(image_desc_creator_param, &color_gamut_sRGB);
@@ -1213,7 +1218,7 @@ set_primaries_named_then_primaries(struct wet_testsuite_data *suite_data)
 	struct wp_image_description_creator_params_v1 *image_desc_creator_param;
 
 	client = create_client();
-	cm = color_manager_get(client);
+	cm = client_get_color_manager(client, 1);
 
 	image_desc_creator_param = color_manager_create_param(cm);
 	wp_image_description_creator_params_v1_set_primaries_named(image_desc_creator_param,
@@ -1237,7 +1242,7 @@ set_tf_power_twice(struct wet_testsuite_data *suite_data)
 	struct wp_image_description_creator_params_v1 *image_desc_creator_param;
 
 	client = create_client();
-	cm = color_manager_get(client);
+	cm = client_get_color_manager(client, 1);
 
 	image_desc_creator_param = color_manager_create_param(cm);
 	wp_image_description_creator_params_v1_set_tf_power(image_desc_creator_param,
@@ -1262,7 +1267,7 @@ set_tf_named_twice(struct wet_testsuite_data *suite_data)
 	struct wp_image_description_creator_params_v1 *image_desc_creator_param;
 
 	client = create_client();
-	cm = color_manager_get(client);
+	cm = client_get_color_manager(client, 1);
 
 	image_desc_creator_param = color_manager_create_param(cm);
 	wp_image_description_creator_params_v1_set_tf_named(image_desc_creator_param,
@@ -1287,7 +1292,7 @@ set_tf_power_then_tf_named(struct wet_testsuite_data *suite_data)
 	struct wp_image_description_creator_params_v1 *image_desc_creator_param;
 
 	client = create_client();
-	cm = color_manager_get(client);
+	cm = client_get_color_manager(client, 1);
 
 	image_desc_creator_param = color_manager_create_param(cm);
 	wp_image_description_creator_params_v1_set_tf_power(image_desc_creator_param,
@@ -1312,7 +1317,7 @@ set_tf_named_then_tf_power(struct wet_testsuite_data *suite_data)
 	struct wp_image_description_creator_params_v1 *image_desc_creator_param;
 
 	client = create_client();
-	cm = color_manager_get(client);
+	cm = client_get_color_manager(client, 1);
 
 	image_desc_creator_param = color_manager_create_param(cm);
 	wp_image_description_creator_params_v1_set_tf_named(image_desc_creator_param,
@@ -1340,7 +1345,7 @@ set_luminance_twice(struct wet_testsuite_data *suite_data)
 	float ref_lum = 300.0;
 
 	client = create_client();
-	cm = color_manager_get(client);
+	cm = client_get_color_manager(client, 1);
 
 	image_desc_creator_param = color_manager_create_param(cm);
 	wp_image_description_creator_params_v1_set_luminances(image_desc_creator_param,
@@ -1369,7 +1374,7 @@ set_target_primaries_twice(struct wet_testsuite_data *suite_data)
 	struct wp_image_description_creator_params_v1 *image_desc_creator_param;
 
 	client = create_client();
-	cm = color_manager_get(client);
+	cm = client_get_color_manager(client, 1);
 
 	image_desc_creator_param = color_manager_create_param(cm);
 	param_creator_set_mastering_display_primaries(image_desc_creator_param, &color_gamut_sRGB);
@@ -1394,7 +1399,7 @@ set_target_luminance_twice(struct wet_testsuite_data *suite_data)
 	float target_max_lum = 3.0f;
 
 	client = create_client();
-	cm = color_manager_get(client);
+	cm = client_get_color_manager(client, 1);
 
 	image_desc_creator_param = color_manager_create_param(cm);
 	wp_image_description_creator_params_v1_set_mastering_luminance(image_desc_creator_param,
@@ -1421,7 +1426,7 @@ set_max_cll_twice(struct wet_testsuite_data *suite_data)
 	struct wp_image_description_creator_params_v1 *image_desc_creator_param;
 
 	client = create_client();
-	cm = color_manager_get(client);
+	cm = client_get_color_manager(client, 1);
 
 	image_desc_creator_param = color_manager_create_param(cm);
 	wp_image_description_creator_params_v1_set_max_cll(image_desc_creator_param, 5.0f);
@@ -1444,7 +1449,7 @@ set_max_fall_twice(struct wet_testsuite_data *suite_data)
 	struct wp_image_description_creator_params_v1 *image_desc_creator_param;
 
 	client = create_client();
-	cm = color_manager_get(client);
+	cm = client_get_color_manager(client, 1);
 
 	image_desc_creator_param = color_manager_create_param(cm);
 	wp_image_description_creator_params_v1_set_max_fall(image_desc_creator_param, 5.0f);
@@ -1469,7 +1474,7 @@ unset_image_description(struct wet_testsuite_data *suite_data)
 	struct image_description *image_desc;
 
 	client = create_client_and_test_surface(0, 0, 100, 100);
-	cm = color_manager_get(client);
+	cm = client_get_color_manager(client, 1);
 
 	/* Create a simple image description. */
 	creator = color_manager_create_param(cm);
@@ -1518,7 +1523,7 @@ unset_inert_surface_image_description(struct wet_testsuite_data *suite_data)
 	struct wp_color_management_surface_v1 *cm_surface;
 
 	client = create_client_and_test_surface(100, 100, 100, 100);
-	cm = color_manager_get(client);
+	cm = client_get_color_manager(client, 1);
 
 	/* Destroy the wl_surface, making cm_surface inert. */
 	cm_surface = wp_color_manager_v1_get_surface(cm->manager_proxy, client->surface->wl_surface);
@@ -1537,6 +1542,7 @@ unset_inert_surface_image_description(struct wet_testsuite_data *suite_data)
 }
 
 DECLARE_TEST_LIST(
+	TESTFN(advertisements1),
 	TESTFN(create_image_description_before_setting_icc_file),
 	TESTFN(set_unreadable_icc_fd),
 	TESTFN(set_too_short_icc_fd),
