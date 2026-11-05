@@ -1213,6 +1213,24 @@ static const struct parametric_case parametric_cases[] = {
 	  .expected_error = WP_IMAGE_DESCRIPTION_V1_CAUSE_UNSUPPORTED,
 	  .error_point = ERROR_POINT_GRACEFUL_FAILURE,
 	},
+	{
+	  /* Invalid TF for the interface version; protocol error. */
+	  .protocol_version = 1,
+	  .primaries_named = WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
+	  .primaries = NULL,
+	  .tf_named = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_COMPOUND_POWER_2_4,
+	  .tf_power = NOT_SET,
+	  .primaries_min_lum = NOT_SET,
+	  .primaries_max_lum = NOT_SET,
+	  .primaries_ref_lum = NOT_SET,
+	  .target_primaries = NULL,
+	  .target_min_lum = NOT_SET,
+	  .target_max_lum = NOT_SET,
+	  .target_max_cll = NOT_SET,
+	  .target_max_fall = NOT_SET,
+	  .expected_error = WP_IMAGE_DESCRIPTION_CREATOR_PARAMS_V1_ERROR_INVALID_TF,
+	  .error_point = ERROR_POINT_TF_NAMED,
+	},
 };
 
 static enum test_result_code
