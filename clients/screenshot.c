@@ -736,6 +736,18 @@ main(int argc, char *argv[])
 		}
 	}
 
+	/* Empty format list means source is unavailable. */
+	wl_list_for_each(output, &app.output_list, link) {
+		if (output->formats.size == 0) {
+			const struct weston_enum_map *entry =
+				weston_enum_map_find_value(source_types, app.src_type);
+
+			fprintf(stderr, "Error: output does not support source '%s'\n",
+					entry->name);
+			return -1;
+		}
+	}
+
 	do {
 		app.retry = false;
 
