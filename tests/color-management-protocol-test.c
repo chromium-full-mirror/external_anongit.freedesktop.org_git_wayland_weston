@@ -905,6 +905,82 @@ static const struct parametric_case parametric_cases[] = {
 	  .expected_error = NOT_SET,
 	  .error_point = ERROR_POINT_NONE,
 	},
+	{
+	  /* Relaxed max cll check (max cll < min target luminance);
+	   * succeeds in version 2. */
+	  .protocol_version = 2,
+	  .primaries_named = WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
+	  .primaries = NULL,
+	  .tf_named = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22,
+	  .tf_power = NOT_SET,
+	  .primaries_min_lum = NOT_SET,
+	  .primaries_max_lum = NOT_SET,
+	  .primaries_ref_lum = NOT_SET,
+	  .target_primaries = NULL,
+	  .target_min_lum = 6.0f,
+	  .target_max_lum = 7,
+	  .target_max_cll = 5,
+	  .target_max_fall = NOT_SET,
+	  .expected_error = NOT_SET,
+	  .error_point = ERROR_POINT_NONE,
+	},
+	{
+	  /* Relaxed max cll (max cll > max target luminance);
+	   * succeeds in version 2. */
+	  .protocol_version = 2,
+	  .primaries_named = WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
+	  .primaries = NULL,
+	  .tf_named = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22,
+	  .tf_power = NOT_SET,
+	  .primaries_min_lum = NOT_SET,
+	  .primaries_max_lum = NOT_SET,
+	  .primaries_ref_lum = NOT_SET,
+	  .target_primaries = NULL,
+	  .target_min_lum = 6.0f,
+	  .target_max_lum = 7,
+	  .target_max_cll = 8,
+	  .target_max_fall = NOT_SET,
+	  .expected_error = NOT_SET,
+	  .error_point = ERROR_POINT_NONE,
+	},
+	{
+	  /* Relaxed max fall (max fall < min target luminance);
+	   * succeeds in version 2. */
+	  .protocol_version = 2,
+	  .primaries_named = WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
+	  .primaries = NULL,
+	  .tf_named = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22,
+	  .tf_power = NOT_SET,
+	  .primaries_min_lum = NOT_SET,
+	  .primaries_max_lum = NOT_SET,
+	  .primaries_ref_lum = NOT_SET,
+	  .target_primaries = NULL,
+	  .target_min_lum = 6.0f,
+	  .target_max_lum = 7,
+	  .target_max_cll = NOT_SET,
+	  .target_max_fall = 5,
+	  .expected_error = NOT_SET,
+	  .error_point = ERROR_POINT_NONE,
+	},
+	{
+	  /* Relaxed max fall (max fall > max target luminance);
+	   * succeeds in version 2. */
+	  .protocol_version = 2,
+	  .primaries_named = WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
+	  .primaries = NULL,
+	  .tf_named = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22,
+	  .tf_power = NOT_SET,
+	  .primaries_min_lum = NOT_SET,
+	  .primaries_max_lum = NOT_SET,
+	  .primaries_ref_lum = NOT_SET,
+	  .target_primaries = NULL,
+	  .target_min_lum = 6.0f,
+	  .target_max_lum = 7,
+	  .target_max_cll = NOT_SET,
+	  .target_max_fall = 8,
+	  .expected_error = NOT_SET,
+	  .error_point = ERROR_POINT_NONE,
+	},
 
 	/************ Failing cases  *************/
 
