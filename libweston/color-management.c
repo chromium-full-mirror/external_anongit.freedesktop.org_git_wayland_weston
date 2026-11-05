@@ -1012,6 +1012,30 @@ cm_get_surface_feedback(struct wl_client *client, struct wl_resource *cm_res,
 }
 
 /**
+ * wp_color_manager_v1.get_image_description(wp_image_description_reference_v1)
+ *
+ * The argument's interface version is frozen to 1 to support independent
+ * factory interfaces. This request creates a proper wp_image_description_v1
+ * from it, if possible.
+ */
+static void
+cm_get_image_description(struct wl_client *client, struct wl_resource *cm_res,
+			 uint32_t protocol_object_id, struct wl_resource *ref_res)
+{
+	struct weston_compositor *compositor = wl_resource_get_user_data(cm_res);
+	uint32_t version = wl_resource_get_version(cm_res);
+	struct weston_color_profile *cprof = wl_resource_get_user_data(ref_res);
+	struct wl_resource *image_desc_res;
+
+	image_desc_res = create_image_description_resource(client, version, protocol_object_id);
+	if (!image_desc_res)
+		return;
+
+	link_image_description_resource(compositor->color_manager, cprof,
+					YES_GET_INFO, image_desc_res);
+}
+
+/**
  * Sets the ICC file for the ICC-based image description creator object.
  */
 static void
@@ -1671,6 +1695,7 @@ color_manager_implementation = {
 	.get_output = cm_get_output,
 	.get_surface = cm_get_surface,
 	.get_surface_feedback = cm_get_surface_feedback,
+	.get_image_description = cm_get_image_description,
 	.create_icc_creator = cm_create_image_description_creator_icc,
 	.create_parametric_creator = cm_create_image_description_creator_params,
 	.create_windows_scrgb = cm_create_windows_scrgb,
