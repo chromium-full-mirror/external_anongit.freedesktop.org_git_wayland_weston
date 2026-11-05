@@ -153,6 +153,61 @@ advertisements1(struct wet_testsuite_data *suite_data)
 	return RESULT_OK;
 }
 
+/** Check protocol interface version 2 advertisements */
+static enum test_result_code
+advertisements2(struct wet_testsuite_data *suite_data)
+{
+	struct client *client;
+	struct color_manager_client *cm;
+
+	client = create_client();
+	cm = client_get_color_manager(client, 2);
+
+	/* Weston supports all color features. */
+	test_assert_u32_eq(cm->supported_features,
+			   (1 << WP_COLOR_MANAGER_V1_FEATURE_ICC_V2_V4) |
+			   (1 << WP_COLOR_MANAGER_V1_FEATURE_PARAMETRIC) |
+			   (1 << WP_COLOR_MANAGER_V1_FEATURE_SET_PRIMARIES) |
+			   (1 << WP_COLOR_MANAGER_V1_FEATURE_SET_LUMINANCES) |
+			   (1 << WP_COLOR_MANAGER_V1_FEATURE_SET_TF_POWER) |
+			   (1 << WP_COLOR_MANAGER_V1_FEATURE_SET_MASTERING_DISPLAY_PRIMARIES) |
+			   (1 << WP_COLOR_MANAGER_V1_FEATURE_EXTENDED_TARGET_VOLUME));
+
+	/* Weston supports all rendering intents. */
+	test_assert_u32_eq(cm->supported_rendering_intents,
+			   (1 << WP_COLOR_MANAGER_V1_RENDER_INTENT_PERCEPTUAL) |
+			   (1 << WP_COLOR_MANAGER_V1_RENDER_INTENT_RELATIVE) |
+			/* (1 << WP_COLOR_MANAGER_V1_RENDER_INTENT_SATURATION) | */
+			   (1 << WP_COLOR_MANAGER_V1_RENDER_INTENT_ABSOLUTE) |
+			   (1 << WP_COLOR_MANAGER_V1_RENDER_INTENT_ABSOLUTE_NO_ADAPTATION) |
+			   (1 << WP_COLOR_MANAGER_V1_RENDER_INTENT_RELATIVE_BPC));
+
+	/* Weston supports all primaries. */
+	test_assert_u32_eq(cm->supported_primaries,
+			   (1 << WP_COLOR_MANAGER_V1_PRIMARIES_SRGB) |
+			   (1 << WP_COLOR_MANAGER_V1_PRIMARIES_PAL_M) |
+			   (1 << WP_COLOR_MANAGER_V1_PRIMARIES_PAL) |
+			   (1 << WP_COLOR_MANAGER_V1_PRIMARIES_NTSC) |
+			   (1 << WP_COLOR_MANAGER_V1_PRIMARIES_GENERIC_FILM) |
+			   (1 << WP_COLOR_MANAGER_V1_PRIMARIES_BT2020) |
+			   (1 << WP_COLOR_MANAGER_V1_PRIMARIES_CIE1931_XYZ) |
+			   (1 << WP_COLOR_MANAGER_V1_PRIMARIES_DCI_P3) |
+			   (1 << WP_COLOR_MANAGER_V1_PRIMARIES_DISPLAY_P3) |
+			   (1 << WP_COLOR_MANAGER_V1_PRIMARIES_ADOBE_RGB));
+
+	/* Weston supports only a few transfer functions, and we make use of
+	 * them in our tests. */
+	test_assert_u32_eq(cm->supported_tf,
+			   (1 << WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22) |
+			   (1 << WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA28) |
+			   (1 << WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR) |
+			   (1 << WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ));
+
+	client_destroy(client);
+
+	return RESULT_OK;
+}
+
 static enum test_result_code
 create_image_description_before_setting_icc_file(struct wet_testsuite_data *suite_data)
 {
@@ -1543,6 +1598,7 @@ unset_inert_surface_image_description(struct wet_testsuite_data *suite_data)
 
 DECLARE_TEST_LIST(
 	TESTFN(advertisements1),
+	TESTFN(advertisements2),
 	TESTFN(create_image_description_before_setting_icc_file),
 	TESTFN(set_unreadable_icc_fd),
 	TESTFN(set_too_short_icc_fd),
