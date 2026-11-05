@@ -362,18 +362,6 @@ static const struct weston_color_tf_info color_tf_info_table[] = {
 		.inverse_curve = INVERSE_SRGB_PIECE_WISE(true),
 	},
 	{
-		.tf = WESTON_TF_EXT_SRGB,
-		.codeword = "compound_power_2_4_ext",
-		.desc = "Extended sRGB piece-wise",
-		.protocol_tf = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_SRGB,
-		.kms_colorop = WDRM_COLOROP_CURVE_1D__COUNT,
-		.kms_colorop_inverse = WDRM_COLOROP_CURVE_1D__COUNT,
-		.count_parameters = 0,
-		.curve_params_valid = true,
-		.curve = SRGB_PIECE_WISE(false),
-		.inverse_curve = INVERSE_SRGB_PIECE_WISE(false),
-	},
-	{
 		.tf = WESTON_TF_ST240,
 		.codeword = "st240",
 		.desc = "SMPTE ST 240",

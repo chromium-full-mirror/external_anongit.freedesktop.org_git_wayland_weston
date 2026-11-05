@@ -236,7 +236,6 @@ weston_cm_send_tf(struct cm_image_desc_info *cm_image_desc_info,
 	case WESTON_TF_GAMMA22:
 	case WESTON_TF_GAMMA28:
 	case WESTON_TF_COMPOUND_POWER_2_4:
-	case WESTON_TF_EXT_SRGB:
 	case WESTON_TF_ST240:
 	case WESTON_TF_ST428:
 	case WESTON_TF_ST2084_PQ:
