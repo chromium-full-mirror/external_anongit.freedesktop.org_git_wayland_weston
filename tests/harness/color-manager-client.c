@@ -178,6 +178,17 @@ image_desc_ready(void *data, struct wp_image_description_v1 *wp_image_descriptio
 	struct image_description *image_desc = data;
 
 	image_desc->status = CM_IMAGE_DESC_READY;
+	image_desc->id32 = identity;
+}
+
+static void
+image_desc_ready2(void *data, struct wp_image_description_v1 *wp_image_description_v1,
+		  uint32_t id_hi, uint32_t id_lo)
+{
+	struct image_description *image_desc = data;
+
+	image_desc->status = CM_IMAGE_DESC_READY;
+	image_desc->id64 = (((uint64_t)id_hi) << 32) | id_lo;
 }
 
 static void
@@ -196,6 +207,7 @@ image_desc_failed(void *data, struct wp_image_description_v1 *wp_image_descripti
 static const struct wp_image_description_v1_listener
 image_desc_iface = {
 	.ready = image_desc_ready,
+	.ready2 = image_desc_ready2,
 	.failed = image_desc_failed,
 };
 

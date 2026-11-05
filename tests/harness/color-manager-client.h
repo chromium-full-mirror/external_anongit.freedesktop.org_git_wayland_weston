@@ -74,6 +74,9 @@ struct image_description {
 	struct wp_image_description_v1 *proxy;
 	enum image_description_status status;
 
+	uint32_t id32;
+	uint64_t id64;
+
 	/* For graceful failures. */
 	int32_t failure_reason;
 };
