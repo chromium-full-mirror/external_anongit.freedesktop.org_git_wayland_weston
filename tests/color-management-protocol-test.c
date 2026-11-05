@@ -1331,6 +1331,13 @@ create_parametric_image_description(struct wet_testsuite_data *suite_data,
 	if (args->error_point == ERROR_POINT_NONE) {
 		test_assert_enum_eq(args->expected_error, NOT_SET);
 		test_assert_enum_eq(image_desc->status, CM_IMAGE_DESC_READY);
+		if (args->protocol_version >= WP_IMAGE_DESCRIPTION_V1_READY2_SINCE_VERSION) {
+			test_assert_u32_eq(image_desc->id32, 0);
+			test_assert_u64_gt(image_desc->id64, 0);
+		} else {
+			test_assert_u32_gt(image_desc->id32, 0);
+			test_assert_u64_eq(image_desc->id64, 0);
+		}
 	} else {
 		test_assert_enum_eq(args->error_point, ERROR_POINT_GRACEFUL_FAILURE);
 		test_assert_enum_eq(image_desc->status, CM_IMAGE_DESC_FAILED);
