@@ -1788,7 +1788,7 @@ bind_color_management(struct wl_client *client, void *data, uint32_t version,
 int
 weston_compositor_enable_color_management_protocol(struct weston_compositor *compositor)
 {
-	uint32_t version = 1;
+	uint32_t version = 2;
 
 	weston_assert_bit_set(compositor,
 			      compositor->color_manager->supported_rendering_intents,
