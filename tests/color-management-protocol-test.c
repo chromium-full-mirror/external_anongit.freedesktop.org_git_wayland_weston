@@ -697,6 +697,7 @@ enum error_point {
 };
 
 struct parametric_case {
+	uint32_t protocol_version;
 	int32_t primaries_named;
 	const struct weston_color_gamut *primaries;
 	int32_t tf_named;
@@ -743,6 +744,7 @@ static const struct parametric_case parametric_cases[] = {
 
 	{
 	  /* sRGB primaries with gamma22; succeeds. */
+	  .protocol_version = 1,
 	  .primaries_named = WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
 	  .primaries = NULL,
 	  .tf_named = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22,
@@ -760,6 +762,7 @@ static const struct parametric_case parametric_cases[] = {
 	},
 	{
 	  /* Custom primaries with gamma22; succeeds. */
+	  .protocol_version = 1,
 	  .primaries_named = NOT_SET,
 	  .primaries = &color_gamut_sRGB,
 	  .tf_named = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22,
@@ -777,6 +780,7 @@ static const struct parametric_case parametric_cases[] = {
 	},
 	{
 	  /* sRGB primaries, gamma22 and valid luminance values; succeeds. */
+	  .protocol_version = 1,
 	  .primaries_named = NOT_SET,
 	  .primaries = &color_gamut_sRGB,
 	  .tf_named = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22,
@@ -794,6 +798,7 @@ static const struct parametric_case parametric_cases[] = {
 	},
 	{
 	  /* sRGB primaries with custom power-law TF; succeeds. */
+	  .protocol_version = 1,
 	  .primaries_named = WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
 	  .primaries = NULL,
 	  .tf_named = NOT_SET,
@@ -811,6 +816,7 @@ static const struct parametric_case parametric_cases[] = {
 	},
 	{
 	  /* sRGB primaries, gamma22 and valid target primaries; succeeds. */
+	  .protocol_version = 1,
 	  .primaries_named = WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
 	  .primaries = NULL,
 	  .tf_named = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22,
@@ -828,6 +834,7 @@ static const struct parametric_case parametric_cases[] = {
 	},
 	{
 	  /* sRGB primaries, PQ TF and valid target luminance; succeeds. */
+	  .protocol_version = 1,
 	  .primaries_named = WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
 	  .primaries = NULL,
 	  .tf_named = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ,
@@ -845,6 +852,7 @@ static const struct parametric_case parametric_cases[] = {
 	},
 	{
 	  /* sRGB primaries, PQ TF and valid max cll; succeeds. */
+	  .protocol_version = 1,
 	  .primaries_named = WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
 	  .primaries = NULL,
 	  .tf_named = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ,
@@ -862,6 +870,7 @@ static const struct parametric_case parametric_cases[] = {
 	},
 	{
 	  /* sRGB primaries, PQ TF and valid max fall; succeeds. */
+	  .protocol_version = 1,
 	  .primaries_named = WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
 	  .primaries = NULL,
 	  .tf_named = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ,
@@ -880,6 +889,7 @@ static const struct parametric_case parametric_cases[] = {
 	{
 	  /* sRGB primaries, PQ TF and valid target luminance, max fall and
 	   * max cll; succeeds. */
+	  .protocol_version = 1,
 	  .primaries_named = WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
 	  .primaries = NULL,
 	  .tf_named = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ,
@@ -900,12 +910,14 @@ static const struct parametric_case parametric_cases[] = {
 
 	{
 	  /* Invalid named primaries; protocol error. */
+	  .protocol_version = 1,
 	  .primaries_named = BAD_ENUM,
 	  .expected_error = WP_IMAGE_DESCRIPTION_CREATOR_PARAMS_V1_ERROR_INVALID_PRIMARIES_NAMED,
 	  .error_point = ERROR_POINT_PRIMARIES_NAMED,
 	},
 	{
 	  /* Invalid TF named; protocol error. */
+	  .protocol_version = 1,
 	  .primaries_named = WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
 	  .primaries = NULL,
 	  .tf_named = BAD_ENUM,
@@ -915,6 +927,7 @@ static const struct parametric_case parametric_cases[] = {
 	{
 	  /* Invalid power-law TF exponent (0.9 < 1.0, which is the minimum);
 	   * protocol error. */
+	  .protocol_version = 1,
 	  .primaries_named = WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
 	  .primaries = NULL,
 	  .tf_named = NOT_SET,
@@ -924,6 +937,7 @@ static const struct parametric_case parametric_cases[] = {
 	},
 	{
 	  /* Invalid luminance (ref white < min lum); protocol error. */
+	  .protocol_version = 1,
 	  .primaries_named = NOT_SET,
 	  .primaries = &color_gamut_sRGB,
 	  .tf_named = NOT_SET,
@@ -936,6 +950,7 @@ static const struct parametric_case parametric_cases[] = {
 	},
 	{
 	  /* Invalid target luminance (min_lum == max_lum); protocol error. */
+	  .protocol_version = 1,
 	  .primaries_named = WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
 	  .primaries = NULL,
 	  .tf_named = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_ST2084_PQ,
@@ -954,6 +969,7 @@ static const struct parametric_case parametric_cases[] = {
 	{
 	  /* Invalid max cll (max cll < min target luminance);
 	   * protocol error. */
+	  .protocol_version = 1,
 	  .primaries_named = WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
 	  .primaries = NULL,
 	  .tf_named = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22,
@@ -972,6 +988,7 @@ static const struct parametric_case parametric_cases[] = {
 	{
 	  /* Invalid max fall (max fall < min target luminance);
 	   * protocol error. */
+	  .protocol_version = 1,
 	  .primaries_named = WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
 	  .primaries = NULL,
 	  .tf_named = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22,
@@ -990,6 +1007,7 @@ static const struct parametric_case parametric_cases[] = {
 	{
 	  /* Invalid custom primaries (CIE XY value out of compositor defined
 	   * range); graceful failure. */
+	  .protocol_version = 1,
 	  .primaries_named = NOT_SET,
 	  .primaries = &color_gamut_invalid_primaries,
 	  .tf_named = NOT_SET,
@@ -1008,6 +1026,7 @@ static const struct parametric_case parametric_cases[] = {
 	{
 	  /* Invalid custom primaries (white point out of color gamut);
 	   * graceful failure. */
+	  .protocol_version = 1,
 	  .primaries_named = NOT_SET,
 	  .primaries = &color_gamut_invalid_white_point,
 	  .tf_named = NOT_SET,
@@ -1026,6 +1045,7 @@ static const struct parametric_case parametric_cases[] = {
 	{
 	  /* Invalid custom target primaries (CIE XY value out of compositor
 	   * defined range); graceful failure. */
+	  .protocol_version = 1,
 	  .primaries_named = WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
 	  .primaries = NULL,
 	  .tf_named = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22,
@@ -1044,6 +1064,7 @@ static const struct parametric_case parametric_cases[] = {
 	{
 	  /* Invalid custom target primaries (white point out of color gamut);
 	   * graceful failure. */
+	  .protocol_version = 1,
 	  .primaries_named = WP_COLOR_MANAGER_V1_PRIMARIES_SRGB,
 	  .primaries = NULL,
 	  .tf_named = WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_GAMMA22,
@@ -1071,7 +1092,7 @@ create_parametric_image_description(struct wet_testsuite_data *suite_data,
 	struct image_description *image_desc = NULL;
 
 	client = create_client();
-	cm = client_get_color_manager(client, 1);
+	cm = client_get_color_manager(client, args->protocol_version);
 
 	image_desc_creator_param = color_manager_create_param(cm);
 
