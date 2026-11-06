@@ -43,7 +43,7 @@
 variables:
   FDO_UPSTREAM_REPO: wayland/weston
   FDO_REPO_SUFFIX: "$BUILD_OS-$FDO_DISTRIBUTION_VERSION/$BUILD_ARCH"
-  FDO_DISTRIBUTION_TAG: '2026-11-09-faster-kernel-builds-2'
+  FDO_DISTRIBUTION_TAG: '2026-11-09-protocols'
 
 
 include:
