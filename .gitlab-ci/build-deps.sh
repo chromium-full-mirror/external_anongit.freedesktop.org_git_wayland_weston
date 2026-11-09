@@ -86,7 +86,19 @@ if [[ -n "$KERNEL_DEFCONFIG" ]]; then
 		--enable CONFIG_DRM \
 		--enable CONFIG_DRM_KMS_HELPER \
 		--enable CONFIG_DRM_VKMS \
-		--enable CONFIG_UDMABUF
+		--enable CONFIG_UDMABUF \
+		--disable CONFIG_BT \
+		--disable CONFIG_DRM_AMDGPU \
+		--disable CONFIG_DRM_I915 \
+		--disable CONFIG_DRM_MSM \
+		--disable CONFIG_DRM_NOUVEAU \
+		--disable CONFIG_DRM_XE \
+		--disable CONFIG_MEDIA_SUPPORT \
+		--disable CONFIG_SOUND \
+		--disable CONFIG_USB_SUPPORT \
+		--disable CONFIG_WIRELESS \
+		--disable CONFIG_WLAN
+
 	make ARCH=${LINUX_ARCH} oldconfig
 	make ARCH=${LINUX_ARCH}
 
