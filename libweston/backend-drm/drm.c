@@ -3380,8 +3380,9 @@ presentation_feedback_mode_to_str(enum wp_presentation_feedback_kind flags)
 		return "hw start presentation";
 	case WP_PRESENTATION_FEEDBACK_KIND_ZERO_COPY:
 		return "zero-copy presentation";
+	default:
+		return "???";
 	}
-	return "???";
 }
 
 static void
