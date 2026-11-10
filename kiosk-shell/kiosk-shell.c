@@ -988,6 +988,8 @@ desktop_surface_removed(struct weston_desktop_surface *desktop_surface,
 				kiosk_shell_output_set_active_surface_tree(shoutput,
 									   NULL);
 		}
+	} else if (shsurf->output) {
+		kiosk_shell_output_set_active_surface_tree(shsurf->output, NULL);
 	}
 
 	kiosk_shell_surface_destroy(shsurf);
