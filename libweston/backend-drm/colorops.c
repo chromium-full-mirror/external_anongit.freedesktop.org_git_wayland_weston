@@ -1270,6 +1270,32 @@ drm_color_pipeline_state_from_xform(struct drm_plane *plane,
 	return NULL;
 }
 
+struct drm_color_pipeline_state *
+drm_color_pipeline_state_from_color_rep(struct drm_plane *plane,
+					struct weston_color_representation *color_rep,
+					const char *indent)
+{
+	unsigned int i;
+
+	for (i = 0; i < plane->num_color_pipelines; i++) {
+		struct drm_color_pipeline_state *pipeline_state;
+		struct drm_colorop_state *colorop_state;
+
+		pipeline_state =
+			drm_color_pipeline_state_create(&plane->pipelines[i]);
+
+		colorop_state = fixed_matrix_create_colorop_state(pipeline_state,
+								  NULL,
+								  color_rep);
+		if (colorop_state)
+			return pipeline_state;
+
+		drm_color_pipeline_state_unref(pipeline_state);
+	}
+
+	return NULL;
+}
+
 static void
 drm_color_pipeline_print(struct drm_color_pipeline *pipeline, FILE *fp)
 {

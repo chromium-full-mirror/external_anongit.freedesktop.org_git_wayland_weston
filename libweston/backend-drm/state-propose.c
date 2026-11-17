@@ -232,6 +232,18 @@ drm_output_try_paint_node_on_plane(struct drm_plane_handle *handle,
 				     pnode->internal_name, (unsigned long) plane->plane_id);
 			goto out;
 		}
+	} else if (fb->format->color_model == COLOR_MODEL_YUV &&
+		   (b->compositor->capabilities & WESTON_CAP_PLANE_COLOR_PIPELINE)) {
+		state->pipeline_state =
+			drm_color_pipeline_state_from_color_rep(plane,
+								&color_rep,
+								"\t\t\t\t");
+		if (!state->pipeline_state) {
+			drm_debug(b, "\t\t\t\t[view] not placing paint node %s on plane %lu: "
+				     "not compatible with surface color representation\n",
+				     pnode->internal_name, (unsigned long) plane->plane_id);
+			goto out;
+		}
 	} else if (fb->format->color_model == COLOR_MODEL_YUV) {
 		const struct weston_color_matrix_coef_info *matrix_coef_info;
 		const struct weston_color_quant_range_info *quant_range_info;
