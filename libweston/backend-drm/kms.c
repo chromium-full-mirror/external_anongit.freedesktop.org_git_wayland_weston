@@ -2478,8 +2478,9 @@ init_kms_caps(struct drm_device *device)
 	 * color_manager being present at this point implies color-management
 	 * being enabled as the no-op color manager will only be created after
 	 * all backends are loaded. Only enable plane color pipelines in that
-	 * case as there is no color pipeline replacement for the legacy
-	 * COLOR_ENCODING and COLOR_RANGE properties yet.
+	 * case by default as the color pipeline replacement for the legacy
+	 * COLOR_ENCODING and COLOR_RANGE properties - Fixed Matrix - only
+	 * landed in Linux 7.4.
 	 */
 	if (b->compositor->color_manager) {
 		ret = drmSetClientCap(device->kms_device->fd,
