@@ -354,16 +354,13 @@ struct weston_color_transform {
 
 	/* Color transform is the series of steps: */
 
-	/** Step 1: color model change */
-	/* YCbCr→RGB conversion, but that is done elsewhere */
-
-	/** Step 2: color curve before color mapping */
+	/** Step 1: color curve before color mapping */
 	struct weston_color_curve pre_curve;
 
-	/** Step 3: color mapping */
+	/** Step 2: color mapping */
 	struct weston_color_mapping mapping;
 
-	/** Step 4: color curve after color mapping */
+	/** Step 3: color curve after color mapping */
 	struct weston_color_curve post_curve;
 
 	/**
