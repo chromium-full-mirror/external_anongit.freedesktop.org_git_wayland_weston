@@ -129,6 +129,7 @@ drm_color_pipeline_state_unref(struct drm_color_pipeline_state *state);
 struct drm_color_pipeline_state *
 drm_color_pipeline_state_from_xform(struct drm_plane *plane,
 				    struct weston_color_transform *xform,
+				    struct weston_color_representation *color_rep,
 				    const char *indent);
 
 struct drm_colorop_3x1d_lut_blob *
@@ -171,6 +172,7 @@ drm_color_pipeline_state_unref(struct drm_color_pipeline_state *state)
 static inline struct drm_color_pipeline_state *
 drm_color_pipeline_state_from_xform(struct drm_plane *plane,
 				    struct weston_color_transform *xform,
+				    struct weston_color_representation *color_rep,
 				    const char *indent)
 {
 	return NULL;

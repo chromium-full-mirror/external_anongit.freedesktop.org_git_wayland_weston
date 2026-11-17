@@ -1051,6 +1051,7 @@ mapping_create_colorop_state(struct drm_color_pipeline_state *pipeline_state,
 static struct drm_color_pipeline_state *
 drm_color_pipeline_state_from_xform_steps(struct drm_color_pipeline *pipeline,
 					  struct weston_color_transform *xform,
+					  struct weston_color_representation *color_rep,
 					  enum lowering_curve_policy policy,
 					  const char *indent)
 {
@@ -1064,6 +1065,18 @@ drm_color_pipeline_state_from_xform_steps(struct drm_color_pipeline *pipeline,
 
 	/* First previous_colorop: none. */
 	previous_colorop = NULL;
+
+	/* Find colorop for model conversion. */
+	if (color_rep->matrix_coefficients != WESTON_COLOR_MATRIX_COEF_UNSET &&
+	    color_rep->matrix_coefficients != WESTON_COLOR_MATRIX_COEF_IDENTITY) {
+		colorop_state = fixed_matrix_create_colorop_state(pipeline_state,
+								  previous_colorop,
+								  color_rep);
+		if (!colorop_state)
+			goto err;
+
+		previous_colorop = colorop_state->colorop;
+	}
 
 	/* Find colorop for pre-curve. */
 	type = xform->pre_curve.type;
@@ -1118,38 +1131,55 @@ err:
 static struct drm_color_pipeline_state *
 drm_color_pipeline_state_from_xform_decomposed(struct drm_color_pipeline *pipeline,
 					       struct weston_color_transform *xform,
+					       struct weston_color_representation *color_rep,
 					       const char *indent)
 {
 	struct drm_device *device = pipeline->plane->device;
 	struct drm_backend *b = device->backend;
-	struct drm_color_pipeline_state *pipeline_state = NULL;
-	const struct drm_colorop *colorop_shaper, *colorop_clut;
+	struct drm_color_pipeline_state *pipeline_state;
+	const struct drm_colorop *previous_colorop, *colorop_shaper, *colorop_clut;
 	struct drm_colorop_state_object so_clut = { 0 };
 	struct drm_colorop_state_object so_shaper = { 0 };
 	const struct drm_colorop_clut_blob *clut;
 
+	pipeline_state = drm_color_pipeline_state_create(pipeline);
+
+	/* First previous_colorop: none. */
+	previous_colorop = NULL;
+
+	/* Find colorop for model conversion. */
+	if (color_rep->matrix_coefficients != WESTON_COLOR_MATRIX_COEF_UNSET &&
+	    color_rep->matrix_coefficients != WESTON_COLOR_MATRIX_COEF_IDENTITY) {
+		struct drm_colorop_state *colorop_state;
+
+		colorop_state = fixed_matrix_create_colorop_state(pipeline_state,
+								  previous_colorop,
+								  color_rep);
+		if (!colorop_state)
+			goto err;
+
+		previous_colorop = colorop_state->colorop;
+	}
+
 	/* Find colorop for shaper (3x1D LUT). */
 	colorop_shaper = search_colorop_type(pipeline,
-					     NULL, /* previous colorop (none) */
+					     previous_colorop,
 					     WDRM_COLOROP_TYPE_1D_LUT);
 	if (!colorop_shaper)
-		goto out;
+		goto err;
 
 	/* Find colorop for 3D cLUT. */
 	colorop_clut = search_colorop_type(pipeline,
 					   colorop_shaper, /* previous colorop */
 					   WDRM_COLOROP_TYPE_3D_LUT);
 	if (!colorop_clut)
-		goto out;
+		goto err;
 
 	clut = drm_colorop_clut_blob_from_xform(device, xform,
 						colorop_shaper->size,
 						colorop_clut->size);
 	if (!clut)
-		goto out;
-
-	/* Create pipeline state and fill with the colorops. */
-	pipeline_state = drm_color_pipeline_state_create(pipeline);
+		goto err;
 
 	so_shaper.type = COLOROP_OBJECT_TYPE_3x1D_LUT;
 	so_shaper.lut_3x1d_blob_id = clut->shaper_blob_id;
@@ -1159,13 +1189,19 @@ drm_color_pipeline_state_from_xform_decomposed(struct drm_color_pipeline *pipeli
 	so_clut.lut_3d_blob_id = clut->clut_blob_id;
 	drm_colorop_state_create(pipeline_state, colorop_clut, so_clut);
 
-out:
-	drm_debug(b, "%s[colorop] color pipeline id %u %s compatible with xform id %u;\n" \
+	drm_debug(b, "%s[colorop] color pipeline id %u IS compatible with xform id %u;\n" \
 		     "%s          xform decomposed into shaper + 3D LUT\n",
 		     indent, pipeline->id,
-		     pipeline_state ? "IS" : "NOT",
 		     xform->id, indent);
 	return pipeline_state;
+
+err:
+	drm_color_pipeline_state_unref(pipeline_state);
+	drm_debug(b, "%s[colorop] color pipeline id %u NOT compatible with xform id %u;\n" \
+		     "%s          xform decomposed into shaper + 3D LUT\n",
+		     indent, pipeline->id,
+		     xform->id, indent);
+	return NULL;
 }
 
 /**
@@ -1174,6 +1210,7 @@ out:
  *
  * @param plane The DRM plane that we plan to use to offload the view.
  * @param xform The xform to offload.
+ * @param color_rep The color representation.
  * @param indent To print debug error messages with proper indentation.
  * @return The color pipeline state, or NULL if no color pipelines are
  * compatible with the xform.
@@ -1181,6 +1218,7 @@ out:
 struct drm_color_pipeline_state *
 drm_color_pipeline_state_from_xform(struct drm_plane *plane,
 				    struct weston_color_transform *xform,
+				    struct weston_color_representation *color_rep,
 				    const char *indent)
 {
 	struct drm_backend *b = plane->device->backend;
@@ -1207,7 +1245,8 @@ drm_color_pipeline_state_from_xform(struct drm_plane *plane,
 			for (i = 0; i < plane->num_color_pipelines; i++) {
 				pipeline_state =
 					drm_color_pipeline_state_from_xform_steps(&plane->pipelines[i],
-										  xform, policy, indent);
+										  xform, color_rep,
+										  policy, indent);
 				if (pipeline_state)
 					return pipeline_state;
 			}
@@ -1223,7 +1262,7 @@ drm_color_pipeline_state_from_xform(struct drm_plane *plane,
 	for (i = 0; i < plane->num_color_pipelines; i++) {
 		pipeline_state =
 			drm_color_pipeline_state_from_xform_decomposed(&plane->pipelines[i],
-								       xform, indent);
+								       xform, color_rep, indent);
 		if (pipeline_state)
 			return pipeline_state;
 	}

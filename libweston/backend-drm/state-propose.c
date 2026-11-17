@@ -177,6 +177,7 @@ drm_output_try_paint_node_on_plane(struct drm_plane_handle *handle,
 	struct drm_backend *b = device->backend;
 	struct drm_plane *plane = handle->plane;
 	struct drm_plane_state *state = NULL;
+	struct weston_color_representation color_rep;
 	enum blend_mode_error err_blend_mode;
 	int fence_fd = -1;
 
@@ -214,27 +215,27 @@ drm_output_try_paint_node_on_plane(struct drm_plane_handle *handle,
 		fence_fd = dup(surface->acquire_fence_fd);
 	fd_update(&state->in_fence_fd, fence_fd);
 
+	color_rep = weston_fill_color_representation(&surface->color_representation,
+						     fb->format);
+
 	drm_color_pipeline_state_unref(state->pipeline_state);
 	state->pipeline_state = NULL;
 	if (pnode->surf_xform.transform) {
 		state->pipeline_state =
 			drm_color_pipeline_state_from_xform(plane,
 							    pnode->surf_xform.transform,
+							    &color_rep,
 							    "\t\t\t\t");
 		if (!state->pipeline_state) {
 			drm_debug(b, "\t\t\t\t[view] not placing paint node %s on plane %lu: "
-				     "not compatible with surface color xform\n",
+				     "not compatible with surface color xform and/or color representation\n",
 				     pnode->internal_name, (unsigned long) plane->plane_id);
 			goto out;
 		}
 	} else if (fb->format->color_model == COLOR_MODEL_YUV) {
-		struct weston_color_representation color_rep;
 		const struct weston_color_matrix_coef_info *matrix_coef_info;
 		const struct weston_color_quant_range_info *quant_range_info;
 
-		color_rep =
-			weston_fill_color_representation(&surface->color_representation,
-							 fb->format);
 		matrix_coef_info =
 			weston_color_matrix_coef_info_from(color_rep.matrix_coefficients);
 		assert(matrix_coef_info);
