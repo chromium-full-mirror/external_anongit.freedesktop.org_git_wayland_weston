@@ -227,9 +227,7 @@ drm_output_try_paint_node_on_plane(struct drm_plane_handle *handle,
 				     pnode->internal_name, (unsigned long) plane->plane_id);
 			goto out;
 		}
-	}
-
-	if (fb->format && fb->format->color_model == COLOR_MODEL_YUV) {
+	} else if (fb->format->color_model == COLOR_MODEL_YUV) {
 		struct weston_color_representation color_rep;
 		const struct weston_color_matrix_coef_info *matrix_coef_info;
 		const struct weston_color_quant_range_info *quant_range_info;
