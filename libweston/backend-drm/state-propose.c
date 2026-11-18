@@ -269,8 +269,9 @@ drm_output_try_paint_node_on_plane(struct drm_plane_handle *handle,
 		} else if (!drm_plane_supports_color_encoding(plane,
 							      matrix_coef_info->wdrm)) {
 			drm_debug(b, "\t\t\t[paint node] not placing paint node %s on plane %lu: "
-				  "color encoding not supported\n", pnode->internal_name,
-				  (unsigned long) plane->plane_id);
+				  "color encoding '%s' not supported\n", pnode->internal_name,
+				  (unsigned long) plane->plane_id,
+				  matrix_coef_info->name);
 			goto out;
 		}
 
@@ -284,8 +285,9 @@ drm_output_try_paint_node_on_plane(struct drm_plane_handle *handle,
 		} else if (!drm_plane_supports_color_range(plane,
 							   quant_range_info->wdrm)) {
 			drm_debug(b, "\t\t\t[paint node] not placing paint node %s on plane %lu: "
-				  "color range not supported\n", pnode->internal_name,
-				  (unsigned long) plane->plane_id);
+				  "color range '%s' not supported\n", pnode->internal_name,
+				  (unsigned long) plane->plane_id,
+				  quant_range_info->name);
 			goto out;
 		}
 
