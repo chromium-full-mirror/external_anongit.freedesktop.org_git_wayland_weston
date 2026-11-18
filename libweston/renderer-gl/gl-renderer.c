@@ -302,6 +302,9 @@ struct gl_buffer_state {
 	GLuint textures[3];
 	int num_textures;
 
+	/* Debug only, true if we followed the legacy yuv import path */
+	bool yuv_fallback;
+
 	struct wl_listener destroy_listener;
 };
 
@@ -2350,6 +2353,27 @@ set_scissor(struct weston_paint_node *pnode,
 }
 
 static void
+gl_log_paint_node_yuv_method(struct gl_renderer *gr,
+			     struct weston_paint_node *pnode)
+{
+	struct gl_surface_state *gs = get_surface_state(pnode->surface);
+	struct weston_buffer *buffer = gs->buffer_ref.buffer;
+	struct gl_buffer_state *gb = gs->buffer;
+	const struct pixel_format_info *info = buffer->pixel_format;
+
+	if (!(info->color_model == COLOR_MODEL_YUV))
+		return;
+
+	if (pnode->draw_solid)
+		return;
+
+	if (gb->yuv_fallback)
+		gl_log_paint_node(gr, "\t\t\tYUV conversion: shader fallback\n");
+	else
+		gl_log_paint_node(gr, "\t\t\tYUV conversion: EGL import hints\n");
+}
+
+static void
 draw_mesh(struct gl_renderer *gr,
 	  struct weston_paint_node *pnode,
 	  struct gl_shader_config *sconf,
@@ -2384,6 +2408,8 @@ draw_mesh(struct gl_renderer *gr,
 		set_debug_mode(gr, sconf, barycentrics, opaque);
 
 	gl_log_paint_node(gr, "\t\tdrawing paint node mesh\n");
+	gl_log_paint_node_yuv_method(gr, pnode);
+
 	if (!gl_renderer_use_program(gr, pnode, sconf))
 		gl_renderer_send_shader_error(pnode); /* Use fallback shader. */
 
@@ -3898,6 +3924,7 @@ import_yuv_dmabuf(struct gl_renderer *gr, struct gl_buffer_state *gb,
 
 	gb->num_images = format->output_planes;
 	gb->shader_variant = format->shader_variant;
+	gb->yuv_fallback = true;
 
 	return true;
 }
