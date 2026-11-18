@@ -412,3 +412,13 @@ pixel_format_get_shm_format(const struct pixel_format_info *info);
  */
 const struct pixel_format_info **
 pixel_format_get_array(const uint32_t *formats, unsigned int formats_count);
+
+/**
+ * Get a pixel format's color model as a human readable string
+ *
+ * @param info Pixel format info structure
+ * @returns Color model string - must not be free()d
+ *
+ */
+const char *
+pixel_format_get_color_model_str(const struct pixel_format_info *info);

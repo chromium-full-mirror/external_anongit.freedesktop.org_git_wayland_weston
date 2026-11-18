@@ -1204,3 +1204,16 @@ pixel_format_get_array(const uint32_t *drm_formats, unsigned int formats_count)
 
 	return formats;
 }
+
+WL_EXPORT const char *
+pixel_format_get_color_model_str(const struct pixel_format_info *info)
+{
+	switch (info->color_model) {
+	case COLOR_MODEL_RGB:
+		return "RGB";
+	case COLOR_MODEL_YUV:
+		return "YUV";
+	}
+
+	return "???";
+}
