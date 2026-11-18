@@ -1557,6 +1557,72 @@ weston_paint_node_status_mask_to_str(struct weston_paint_node *pnode)
 	return bits_to_str(pnode->shadow_status, paint_node_mask_to_str);
 }
 
+static void
+weston_surface_log_color_representation(FILE *fp,
+					struct weston_surface *surface,
+					const char *indent)
+{
+	if (!fp)
+		return;
+
+	struct weston_buffer *buffer = surface->buffer_ref.buffer;
+
+	if (!buffer || !buffer->pixel_format)
+		return;
+
+	struct weston_color_representation *set_rep = &surface->color_representation;
+	struct weston_color_representation derived_rep =
+		weston_fill_color_representation(set_rep, buffer->pixel_format);
+	const struct weston_alpha_mode_info *alpha_info =
+		weston_alpha_mode_info_from(derived_rep.alpha_mode);
+	const struct weston_color_matrix_coef_info *matrix_coef_info =
+		weston_color_matrix_coef_info_from(derived_rep.matrix_coefficients);
+	const struct weston_color_quant_range_info *range_info =
+		weston_color_quant_range_info_from(derived_rep.quant_range);
+	const struct weston_ycbcr_chroma_location_info *chroma_location_info =
+		weston_ycbcr_chroma_location_info_from(derived_rep.chroma_location);
+	bool quant_set = set_rep->quant_range != WESTON_COLOR_QUANT_RANGE_UNSET;
+	bool coeff_set = set_rep->matrix_coefficients != WESTON_COLOR_MATRIX_COEF_UNSET;
+
+	fputs(indent, fp);
+	fprintf(fp, "color representation:\n");
+
+	fputs(indent, fp);
+	fputs("\tcolor model: ", fp);
+	fputs(pixel_format_get_color_model_str(buffer->pixel_format), fp);
+	fputs("\n", fp);
+
+	fputs(indent, fp);
+	fputs("\talpha mode: ", fp);
+	fputs(alpha_info->name, fp);
+	fputs("\n", fp);
+
+	fputs(indent, fp);
+	fputs("\tmatrix coefficients ", fp);
+	if (coeff_set)
+		fputs("(client set): ", fp);
+	else
+		fputs("(default): ", fp);
+	fputs(matrix_coef_info->name, fp);
+	fputs("\n", fp);
+
+	fputs(indent, fp);
+	fputs("\tquant range ", fp);
+	if (quant_set)
+		fputs("(client set): ", fp);
+	else
+		fputs("(default): ", fp);
+	fputs(range_info->name, fp);
+	fputs("\n", fp);
+
+	if (buffer->pixel_format->color_model == COLOR_MODEL_YUV) {
+		fputs(indent, fp);
+		fputs("\tchroma location: ", fp);
+		fputs(chroma_location_info->name, fp);
+		fputs("\n", fp);
+	}
+}
+
 WL_EXPORT void
 weston_paint_node_log_start(struct weston_paint_node *pnode,
 			    struct weston_log_scope *scope)
@@ -1567,6 +1633,7 @@ weston_paint_node_log_start(struct weston_paint_node *pnode,
 	char *pnode_status_str = NULL;
 	pixman_box32_t *visible_region;
 	pixman_box32_t *prev_visible_region;
+	FILE *fp;
 
 	if (!weston_log_scope_is_enabled(scope))
 		return;
@@ -1598,6 +1665,9 @@ weston_paint_node_log_start(struct weston_paint_node *pnode,
 
 	weston_log_scope_printf(scope, "\t\tbuffer modifier: %s\n",
 				buffer->format_modifier_name);
+
+	fp = weston_log_scope_stream(scope);
+	weston_surface_log_color_representation(fp, surface, "\t\t");
 
 	if (pnode->shadow_status == WESTON_PAINT_NODE_CLEAN) {
 		weston_log_scope_printf(scope,
@@ -10526,6 +10596,8 @@ debug_scene_view_print(FILE *fp, struct weston_view *view)
 	fputs("\n", fp);
 
 	debug_scene_view_print_buffer(fp, view);
+
+	weston_surface_log_color_representation(fp, view->surface, "\t\t");
 
 	if (weston_surface_is_mapped(view->surface)) {
 		fprintf(fp, "\t\tCommit frame rate: %2.2f, Painted frame "
