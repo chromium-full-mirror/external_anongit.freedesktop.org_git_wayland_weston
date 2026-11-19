@@ -197,9 +197,118 @@ use_ffwd(struct wet_testsuite_data *suite_data)
 	return RESULT_OK;
 }
 
+static enum test_result_code
+use_ffwd_on_desync_subsurface(struct wet_testsuite_data *suite_data)
+{
+	struct client *client;
+	struct buffer *buf_parent;
+	struct buffer *buf_sub[4];
+	struct wp_commit_timer_v1 *timer;
+	struct weston_fast_forward_v1 *ffwd;
+	struct wp_presentation *pres;
+	struct timespec future;
+	struct wl_subcompositor *subco;
+	struct wl_subsurface *sub;
+	struct wl_surface *child_surface;
+	uint32_t future_sec_hi, future_sec_lo, future_nsec;
+	pixman_color_t red, green, blue, white;
+	bool match;
+
+	color_rgb888(&red, 255, 0, 0);
+	color_rgb888(&green, 0, 255, 0);
+	color_rgb888(&blue, 0, 0, 255);
+	color_rgb888(&white, 255, 255, 255);
+
+	client = create_client_and_test_surface(100, 50, 100, 100);
+	test_assert_ptr_not_null(client);
+	subco = client_get_subcompositor(client);
+
+	pres = client_get_presentation(client);
+
+	buf_parent = surface_commit_color(client, client->surface->wl_surface, &white, 100, 100);
+
+	child_surface = wl_compositor_create_surface(client->wl_compositor);
+
+	ffwd = weston_fast_forward_manager_v1_get_fast_forward(client->weston_fast_forward_manager,
+							       child_surface);
+
+	timer = wp_commit_timing_manager_v1_get_timer(client->commit_timing_manager,
+						      child_surface);
+
+	sub = wl_subcompositor_get_subsurface(subco, child_surface, client->surface->wl_surface);
+	wl_subsurface_set_desync(sub);
+	wl_subsurface_set_position(sub, 20, 20);
+	buf_sub[0] = surface_commit_color(client, child_surface, &blue, 75, 75);
+
+	/* The distant future... */
+	clock_gettime(client_get_presentation_clock(client), &future);
+	timespec_add_msec(&future, &future, 1000000);
+	timespec_to_proto(&future, &future_sec_hi, &future_sec_lo, &future_nsec);
+
+	wp_commit_timer_v1_set_timestamp(timer, future_sec_hi, future_sec_lo, future_nsec);
+	buf_sub[1] = surface_commit_color(client, child_surface, &red, 75, 75);
+
+	weston_fast_forward_v1_fast_forward(ffwd);
+	wl_surface_commit(child_surface);
+
+	wp_commit_timer_v1_set_timestamp(timer, future_sec_hi, future_sec_lo, future_nsec);
+	buf_sub[2] = surface_commit_color(client, child_surface, &green, 75, 75);
+
+	/* The red surface should be visible, because its timestamp was
+	 * ignored. But the green surface will wait a long time to display.
+	 */
+	struct verify_image_target vit_before = {
+		.ref.basename = "ffwd_sub_before",
+	};
+	match = verify_screen_content(client, &vit_before, 0);
+	test_assert_true(match);
+
+	weston_fast_forward_v1_fast_forward(ffwd);
+	wl_surface_commit(child_surface);
+
+	/* The green surface should be visible because we ignore its
+	 * timestamp now.
+	 */
+	struct verify_image_target vit_after = {
+		.ref.basename = "ffwd_sub_after",
+	};
+	match = verify_screen_content(client, &vit_after, 1);
+	test_assert_true(match);
+
+	/* The distant future... again */
+	clock_gettime(client_get_presentation_clock(client), &future);
+	timespec_add_msec(&future, &future, 1000000);
+	timespec_to_proto(&future, &future_sec_hi, &future_sec_lo, &future_nsec);
+
+	wp_commit_timer_v1_set_timestamp(timer, future_sec_hi, future_sec_lo, future_nsec);
+	buf_sub[3] = surface_commit_color(client, child_surface, &white, 75, 75);
+
+	/* Fast forward should have completed, so we should have the
+	 * same green surface on screen until the distant future.
+	 */
+	match = verify_screen_content(client, &vit_after, 2);
+	test_assert_true(match);
+
+	wp_commit_timer_v1_destroy(timer);
+	weston_fast_forward_v1_destroy(ffwd);
+
+	buffer_destroy(buf_parent);
+	for (int i = 0; i < 4; i++)
+		buffer_destroy(buf_sub[i]);
+
+	wl_subsurface_destroy(sub);
+	wl_surface_destroy(child_surface);
+	wp_presentation_destroy(pres);
+	wl_subcompositor_destroy(subco);
+	client_destroy(client);
+
+	return RESULT_OK;
+}
+
 DECLARE_TEST_LIST(
 	TESTFN(get_two_ffwd),
 	TESTFN(get_two_ffwd_safely),
 	TESTFN(use_ffwd_on_destroyed_surface),
 	TESTFN(use_ffwd),
+	TESTFN(use_ffwd_on_desync_subsurface),
 );
