@@ -182,7 +182,7 @@ use_ffwd(struct wet_testsuite_data *suite_data)
 	struct verify_image_target vit_green = {
 		.ref.basename = "ffwd_green",
 	};
-	match = verify_screen_content(client, &vit_green, 0);
+	match = verify_screen_content(client, &vit_green, 1);
 	test_assert_true(match);
 
 	wp_commit_timer_v1_destroy(timer);
