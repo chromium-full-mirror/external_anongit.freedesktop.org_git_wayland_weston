@@ -755,6 +755,14 @@ weston_surface_state_merge_from(struct weston_surface_state *dst,
 
 	dst->may_tear = src->may_tear;
 
+	/* fast_forward needs to remain set until state application,
+	 * or a synchronous subsurface committing to the cache could
+	 * start a fast_forward (which starts on commit, even for
+	 * sync surfaces), but lose the terminating condition.
+	 */
+	dst->fast_forward |= src->fast_forward;
+	src->fast_forward = false;
+
 	dst->status |= src->status;
 	src->status = WESTON_SURFACE_CLEAN;
 }
