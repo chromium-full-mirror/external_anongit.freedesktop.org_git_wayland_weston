@@ -914,9 +914,9 @@ weston_surface_commit(struct weston_surface *surface)
 	struct weston_transaction_queue *tq;
 
 	/* Fast forward begins at commit, and concludes at state application */
-	if (surface->pending.fast_forward) {
+	if (state->fast_forward) {
 		WESTON_TRACE_ANNOTATE(("surface state flow",
-				       &surface->pending.flow));
+				       &state->flow));
 		WESTON_TRACE_COMMIT_ANNOTATION("applying fast forward");
 		surface->fast_forwarding = true;
 		weston_compositor_apply_transactions(comp);
