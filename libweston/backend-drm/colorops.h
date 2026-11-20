@@ -183,6 +183,14 @@ drm_color_pipeline_state_from_xform(struct drm_plane *plane,
 	return NULL;
 }
 
+static inline struct drm_color_pipeline_state *
+drm_color_pipeline_state_from_color_rep(struct drm_plane *plane,
+					struct weston_color_representation *color_rep,
+					const char *indent)
+{
+	return NULL;
+}
+
 static inline const struct drm_colorop_3x1d_lut_blob *
 drm_colorop_3x1d_lut_blob_create(const struct drm_device *device,
 				 const struct weston_color_transform *xform,
