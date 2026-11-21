@@ -31,6 +31,7 @@
 
 #include "libweston-internal.h"
 #include "libweston/desktop.h"
+#include "kiosk-shell/kiosk-shell.h"
 #include "shared/xalloc.h"
 #include "weston-test-client-helper.h"
 #include "weston-test-fixture-compositor.h"
@@ -394,8 +395,204 @@ test_surface_unmaps_on_null(struct wet_testsuite_data *suite_data)
 	return RESULT_OK;
 }
 
+static enum test_result_code
+destroy_last_surface_without_seat(struct wet_testsuite_data *suite_data)
+{
+	struct xdg_client *xdg_client = create_xdg_client();
+	struct xdg_surface_data *xdg_surface = create_xdg_surface(xdg_client);
+	struct kiosk_shell_output *shoutput = NULL;
+
+	weston_test_device_release(xdg_client->client->test->weston_test, "seat");
+	wl_display_roundtrip(xdg_client->client->wl_display);
+
+	xdg_surface_make_toplevel(xdg_surface, "weston.test.kiosk", "no-seat");
+	xdg_surface_wait_configure(xdg_surface);
+	client_push_breakpoint(xdg_client->client, suite_data,
+			       WESTON_TEST_BREAKPOINT_POST_REPAINT,
+			       (struct wl_proxy *) xdg_client->client->output->wl_output);
+	xdg_surface_commit_solid(xdg_surface, 255, 0, 0);
+
+	RUN_INSIDE_BREAKPOINT(xdg_client->client, suite_data) {
+		struct weston_head *head = breakpoint->resource;
+		struct weston_paint_node *pnode =
+			next_pnode_from_z(head->output, NULL);
+		struct weston_desktop_surface *desktop_surface;
+		struct kiosk_shell_surface *shsurf;
+
+		test_assert_ptr_not_null(pnode);
+		assert_surface_matches(suite_data, pnode->surface, xdg_surface->surface);
+		desktop_surface = weston_surface_get_desktop_surface(pnode->surface);
+		test_assert_ptr_not_null(desktop_surface);
+		shsurf = weston_desktop_surface_get_user_data(desktop_surface);
+		test_assert_ptr_not_null(shsurf);
+		test_assert_int_eq(wl_list_length(&shsurf->shell->output_list), 1);
+		shoutput = wl_container_of(shsurf->shell->output_list.next,
+					  shoutput, link);
+		test_assert_ptr_eq(shoutput->active_surface_tree, &shsurf->surface_tree_list);
+	}
+
+	destroy_xdg_surface(xdg_surface);
+	client_push_breakpoint(xdg_client->client, suite_data,
+			       WESTON_TEST_BREAKPOINT_POST_REPAINT,
+			       (struct wl_proxy *) xdg_client->client->output->wl_output);
+	RUN_INSIDE_BREAKPOINT(xdg_client->client, suite_data) {
+		test_assert_enum_eq(breakpoint->template_->breakpoint,
+				    WESTON_TEST_BREAKPOINT_POST_REPAINT);
+		test_assert_ptr_null(shoutput->active_surface_tree);
+	}
+
+	weston_test_device_add(xdg_client->client->test->weston_test, "seat");
+	wl_display_roundtrip(xdg_client->client->wl_display);
+	xdg_client_destroy(xdg_client);
+
+	return RESULT_OK;
+}
+
+static enum test_result_code
+destroy_inactive_surface(struct wet_testsuite_data *suite_data)
+{
+	struct xdg_client *xdg_client = create_xdg_client();
+	struct xdg_surface_data *first = create_xdg_surface(xdg_client);
+	struct xdg_surface_data *second;
+	struct weston_surface *expected = NULL;
+	struct wl_proxy *output =
+		(struct wl_proxy *) xdg_client->client->output->wl_output;
+
+	wl_display_roundtrip(xdg_client->client->wl_display);
+
+	xdg_surface_make_toplevel(first, "weston.test.kiosk", "inactive");
+	xdg_surface_wait_configure(first);
+	client_push_breakpoint(xdg_client->client, suite_data,
+			       WESTON_TEST_BREAKPOINT_POST_REPAINT,
+			       output);
+	xdg_surface_commit_solid(first, 255, 0, 0);
+	RUN_INSIDE_BREAKPOINT(xdg_client->client, suite_data) {
+		struct weston_head *head = breakpoint->resource;
+		struct weston_paint_node *pnode =
+			next_pnode_from_z(head->output, NULL);
+
+		test_assert_ptr_not_null(pnode);
+		if (pnode)
+			assert_surface_matches(suite_data, pnode->surface,
+				       first->surface);
+	}
+
+	second = create_xdg_surface(xdg_client);
+	xdg_surface_make_toplevel(second, "weston.test.kiosk", "active");
+	xdg_surface_wait_configure(second);
+	client_push_breakpoint(xdg_client->client, suite_data,
+			       WESTON_TEST_BREAKPOINT_POST_REPAINT,
+			       output);
+	xdg_surface_commit_solid(second, 0, 255, 0);
+	RUN_INSIDE_BREAKPOINT(xdg_client->client, suite_data) {
+		struct weston_head *head = breakpoint->resource;
+		struct weston_paint_node *pnode =
+			next_pnode_from_z(head->output, NULL);
+
+		expected = get_resource_data_from_proxy(suite_data,
+				(struct wl_proxy *) second->surface->wl_surface);
+		test_assert_ptr_not_null(pnode);
+		if (pnode)
+			test_assert_ptr_eq(pnode->surface, expected);
+	}
+
+	destroy_xdg_surface(first);
+	client_push_breakpoint(xdg_client->client, suite_data,
+			       WESTON_TEST_BREAKPOINT_POST_REPAINT,
+			       output);
+	RUN_INSIDE_BREAKPOINT(xdg_client->client, suite_data) {
+		struct weston_head *head = breakpoint->resource;
+		struct weston_paint_node *pnode =
+			next_pnode_from_z(head->output, NULL);
+
+		test_assert_ptr_not_null(pnode);
+		if (pnode)
+			test_assert_ptr_eq(pnode->surface, expected);
+	}
+
+	destroy_xdg_surface(second);
+	wl_display_roundtrip(xdg_client->client->wl_display);
+	xdg_client_destroy(xdg_client);
+
+	return RESULT_OK;
+}
+
+static enum test_result_code
+destroy_inactive_surface_without_seat(struct wet_testsuite_data *suite_data)
+{
+	struct xdg_client *xdg_client = create_xdg_client();
+	struct xdg_surface_data *first = create_xdg_surface(xdg_client);
+	struct xdg_surface_data *second;
+	struct weston_surface *expected = NULL;
+	struct wl_proxy *output =
+		(struct wl_proxy *) xdg_client->client->output->wl_output;
+
+	weston_test_device_release(xdg_client->client->test->weston_test, "seat");
+	wl_display_roundtrip(xdg_client->client->wl_display);
+
+	xdg_surface_make_toplevel(first, "weston.test.kiosk", "inactive");
+	xdg_surface_wait_configure(first);
+	client_push_breakpoint(xdg_client->client, suite_data,
+			       WESTON_TEST_BREAKPOINT_POST_REPAINT,
+			       output);
+	xdg_surface_commit_solid(first, 255, 0, 0);
+	RUN_INSIDE_BREAKPOINT(xdg_client->client, suite_data) {
+		struct weston_head *head = breakpoint->resource;
+		struct weston_paint_node *pnode =
+			next_pnode_from_z(head->output, NULL);
+
+		test_assert_ptr_not_null(pnode);
+		if (pnode)
+			assert_surface_matches(suite_data, pnode->surface,
+				       first->surface);
+	}
+
+	second = create_xdg_surface(xdg_client);
+	xdg_surface_make_toplevel(second, "weston.test.kiosk", "active");
+	xdg_surface_wait_configure(second);
+	client_push_breakpoint(xdg_client->client, suite_data,
+			       WESTON_TEST_BREAKPOINT_POST_REPAINT,
+			       output);
+	xdg_surface_commit_solid(second, 0, 255, 0);
+	RUN_INSIDE_BREAKPOINT(xdg_client->client, suite_data) {
+		struct weston_head *head = breakpoint->resource;
+		struct weston_paint_node *pnode =
+			next_pnode_from_z(head->output, NULL);
+
+		expected = get_resource_data_from_proxy(suite_data,
+				(struct wl_proxy *) second->surface->wl_surface);
+		test_assert_ptr_not_null(pnode);
+		if (pnode)
+			test_assert_ptr_eq(pnode->surface, expected);
+	}
+
+	destroy_xdg_surface(first);
+	client_push_breakpoint(xdg_client->client, suite_data,
+			       WESTON_TEST_BREAKPOINT_POST_REPAINT,
+			       output);
+	RUN_INSIDE_BREAKPOINT(xdg_client->client, suite_data) {
+		struct weston_head *head = breakpoint->resource;
+		struct weston_paint_node *pnode =
+			next_pnode_from_z(head->output, NULL);
+
+		test_assert_ptr_not_null(pnode);
+		if (pnode)
+			test_assert_ptr_eq(pnode->surface, expected);
+	}
+
+	destroy_xdg_surface(second);
+	weston_test_device_add(xdg_client->client->test->weston_test, "seat");
+	wl_display_roundtrip(xdg_client->client->wl_display);
+	xdg_client_destroy(xdg_client);
+
+	return RESULT_OK;
+}
+
 DECLARE_TEST_LIST(
 	TESTFN(two_surface_switching),
 	TESTFN(top_surface_present_in_output_repaint),
 	TESTFN(test_surface_unmaps_on_null),
+	TESTFN(destroy_inactive_surface_without_seat),
+	TESTFN(destroy_inactive_surface),
+	TESTFN(destroy_last_surface_without_seat),
 );

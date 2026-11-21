@@ -74,6 +74,12 @@ get_kiosk_shell_seat(struct weston_seat *seat)
 			    struct kiosk_shell_seat, seat_destroy_listener);
 }
 
+static bool
+kiosk_shell_surface_is_active(struct kiosk_shell_surface *shsurf)
+{
+	return shsurf->output->active_surface_tree == &shsurf->surface_tree_list;
+}
+
 
 static struct weston_seat *
 get_kiosk_shell_first_seat(struct kiosk_shell *shell)
@@ -989,7 +995,12 @@ desktop_surface_removed(struct weston_desktop_surface *desktop_surface,
 									   NULL);
 		}
 	} else if (shsurf->output) {
-		kiosk_shell_output_set_active_surface_tree(shsurf->output, NULL);
+		/* lacking a currently focused surface we don't have a
+		 * successor to search for, just make sure the surface we're
+		 * trying to invalidate is the currently active one */
+		if (kiosk_shell_surface_is_active(shsurf))
+			kiosk_shell_output_set_active_surface_tree(shsurf->output,
+								   NULL);
 	}
 
 	kiosk_shell_surface_destroy(shsurf);
