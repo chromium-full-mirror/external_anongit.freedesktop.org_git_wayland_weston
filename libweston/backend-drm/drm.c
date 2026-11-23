@@ -4202,7 +4202,7 @@ drm_backend_update_connectors_post_destroy(struct drm_device *device,
 	/* Destroy writeback objects of writeback connectors that have
 	 * disappeared. */
 	wl_list_for_each_safe(writeback, writeback_next,
-			      &b->drm->writeback_connector_list, link) {
+			      &device->writeback_connector_list, link) {
 		connector_id = writeback->connector.connector_id;
 
 		if (resources_has_connector(resources, connector_id))
