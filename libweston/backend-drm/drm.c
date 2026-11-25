@@ -4873,6 +4873,7 @@ drm_backend_create(struct weston_compositor *compositor,
 	struct wl_event_loop *loop;
 	const char *seat_id = default_seat;
 	const char *session_seat;
+	struct weston_head *base, *next;
 	struct weston_drm_format_array *scanout_formats;
 	int ret;
 
@@ -5094,6 +5095,12 @@ err_udev_monitor:
 err_udev_input:
 	udev_input_destroy(&b->input);
 err_drm_device:
+	b->base.destroy = drm_destroy;
+	wl_list_for_each_safe(base, next, &compositor->head_list,
+			      compositor_link) {
+		if (base->backend == &b->base)
+			drm_head_destroy(base);
+	}
 	drm_backend_destroy_all_drm_devices(b);
 err_udev:
 	udev_unref(b->udev);
