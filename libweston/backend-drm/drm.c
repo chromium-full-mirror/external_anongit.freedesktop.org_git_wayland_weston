@@ -4469,6 +4469,7 @@ drm_destroy(struct weston_backend *backend)
 	struct drm_backend *b = container_of(backend, struct drm_backend, base);
 	struct weston_compositor *ec = b->compositor;
 	struct weston_head *base, *next;
+	struct drm_device *device;
 
 	wl_list_remove(&b->base.link);
 
@@ -4476,6 +4477,9 @@ drm_destroy(struct weston_backend *backend)
 		if (to_drm_head(base))
 			drm_head_destroy(base);
 	}
+
+	wl_list_for_each(device, &b->kms_list, link)
+		destroy_planes(device);
 
 	drm_fini_gbm(b);
 
