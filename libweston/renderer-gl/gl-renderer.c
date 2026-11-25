@@ -4462,8 +4462,7 @@ gl_renderer_surface_copy_content(struct weston_surface *surface,
 	gs = get_surface_state(surface);
 	gb = gs->buffer;
 	buffer = gs->buffer_ref.buffer;
-	assert(buffer);
-	if (buffer->direct_display)
+	if (!buffer || buffer->direct_display)
 		return -1;
 
 	cw = buffer->width;

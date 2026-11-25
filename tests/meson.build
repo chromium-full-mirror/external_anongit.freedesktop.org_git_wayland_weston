@@ -171,6 +171,7 @@ tests = [
 	},
 	{	'name': 'surface', },
 	{	'name': 'surface-global', },
+	{	'name': 'surface-copy-content', },
 	{	'name': 'tearing-control', },
 	{	'name': 'timespec', },
 	{
